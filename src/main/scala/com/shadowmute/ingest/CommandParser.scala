@@ -8,6 +8,8 @@ object CommandParser {
     val verb = verbAction(0).toLowerCase
     if (verb == "helo") {
       Right(Helo(verbAction.lift(1).getOrElse("")))
+    } else if (verb == "ehlo") {
+      Right(Ehlo(verbAction.lift(1).getOrElse("")))
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

@@ -17,6 +17,19 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       helo.content mustBe "sample.testing"
     }
 
+    "parse an EHLO command" in {
+      val incoming = SmtpConnection.IncomingMessage("EHLO sample.testing")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Ehlo]
+
+      val ehlo: Ehlo = parseResult.asInstanceOf[Ehlo]
+
+      ehlo.content mustBe "sample.testing"
+    }
+
     "Return command not recognized when empty" in {
       val incoming = SmtpConnection.IncomingMessage("")
       val parsed = CommandParser.parse(incoming)

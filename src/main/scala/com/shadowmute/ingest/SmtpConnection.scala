@@ -32,6 +32,10 @@ class SmtpConnection extends Actor {
           become(greeted)
           sender ! Ok("shadowmute.com")
         }
+        case Right(_: Ehlo) => {
+          become(greeted)
+          sender ! Ok("shadowmute.com")
+        }
         case _ =>
           sender() ! CommandNotRecognized
       }

@@ -1,7 +1,7 @@
 package com.shadowmute.ingest
 
 import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestKit}
 
 import org.scalatest._
 
@@ -25,6 +25,14 @@ class SmtpConnectionSpec
       val smtpConnection = system.actorOf(SmtpConnection.props)
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO test.actor")
+
+      receiveOne(10.seconds).toString must startWith("250 ")
+    }
+
+    "respond to a EHLO request" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("EHLO test.actor")
 
       receiveOne(10.seconds).toString must startWith("250 ")
     }
