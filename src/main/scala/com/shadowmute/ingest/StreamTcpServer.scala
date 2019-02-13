@@ -20,10 +20,12 @@ class StreamTcpServer(system: ActorSystem) {
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
     Tcp().bind(host, port)
 
-  connections runForeach { connection ⇒
-    println(s"[*] New connection from: ${connection.remoteAddress}")
+  val smtpHandler = new SmtpHandler(system)
 
-    SmtpHandler.handle(connection)
+  connections runForeach { connection ⇒
+    Logger().debug(s"[*] New connection from: ${connection.remoteAddress}")
+
+    smtpHandler.handle(connection)
   }
 }
 
