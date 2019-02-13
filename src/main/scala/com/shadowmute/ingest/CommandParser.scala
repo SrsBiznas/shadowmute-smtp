@@ -10,6 +10,8 @@ object CommandParser {
       Right(Helo(verbAction.lift(1).getOrElse("")))
     } else if (verb == "ehlo") {
       Right(Ehlo(verbAction.lift(1).getOrElse("")))
+    } else if (verb == "noop") {
+      Right(Noop(verbAction.lift(1).getOrElse("")))
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

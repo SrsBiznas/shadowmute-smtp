@@ -8,9 +8,11 @@ class SmtpConnection extends Actor {
   def greeted: Receive = {
     case msg: SmtpConnection.IncomingMessage =>
       CommandParser.parse(msg) match {
-        case Right(_: Helo) => {
-          become(greeted)
+        case Right(_: Helo) | Right(_: Ehlo) => {
           sender ! "NOPE!"
+        }
+        case Right(_: Noop) => {
+          sender ! Ok("0x90")
         }
         case _ =>
           sender() ! CommandNotRecognized
@@ -36,12 +38,15 @@ class SmtpConnection extends Actor {
           become(greeted)
           sender ! Ok("shadowmute.com")
         }
+        case Right(_: Noop) => {
+          sender ! Ok("0x90")
+        }
         case _ =>
-          sender() ! CommandNotRecognized
+          sender() ! CommandNotRecognized()
       }
     case m => {
       Logger().debug(s"[-] SINKED [${m}]")
-      sender() ! CommandNotRecognized
+      sender() ! CommandNotRecognized()
     }
   }
 }

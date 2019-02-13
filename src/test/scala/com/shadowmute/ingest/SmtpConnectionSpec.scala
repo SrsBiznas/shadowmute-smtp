@@ -36,5 +36,13 @@ class SmtpConnectionSpec
 
       receiveOne(10.seconds).toString must startWith("250 ")
     }
+
+    "respond to a NOOP request" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("NOOP test.actor")
+
+      receiveOne(10.seconds).toString must startWith("250 ")
+    }
   }
 }

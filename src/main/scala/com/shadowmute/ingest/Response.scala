@@ -7,5 +7,7 @@ case class Ok(content: String) extends Response {
 }
 
 case class CommandNotRecognized() extends Response {
-  override def toString = "500  Syntax error / Command not recognized"
+  override def toString = {
+    "500 Syntax error / Command not recognized"
+  }
 }
