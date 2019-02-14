@@ -14,6 +14,8 @@ object CommandParser {
       Right(Noop(verbAction.lift(1).getOrElse("")))
     } else if (verb == "quit") {
       Right(Quit())
+    } else if (verb == "vrfy") {
+      Right(Vrfy(verbAction.lift(1).getOrElse("")))
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

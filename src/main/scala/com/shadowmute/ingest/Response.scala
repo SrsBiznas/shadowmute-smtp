@@ -15,3 +15,9 @@ case class CommandNotRecognized() extends Response {
     "500 Syntax error / Command not recognized"
   }
 }
+
+case class CannotVerifyUser() extends Response {
+  override def toString = {
+    "252 Cannot and will not verify the user"
+  }
+}

@@ -21,5 +21,11 @@ class ResponseSpec extends WordSpec with MustMatchers {
 
       actual.toString must startWith("500 ")
     }
+
+    "Start with the correct response code in CannotVerifyUser" in {
+      val actual = CannotVerifyUser()
+
+      actual.toString must startWith("252 ")
+    }
   }
 }

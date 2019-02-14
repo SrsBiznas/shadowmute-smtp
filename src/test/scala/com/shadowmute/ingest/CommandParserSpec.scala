@@ -52,6 +52,15 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       parseResult mustBe a[Quit]
     }
 
+    "parse a VRFY command" in {
+      val incoming = SmtpConnection.IncomingMessage("VRFY sample.testing")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Vrfy]
+    }
+
     "Return command not recognized when empty" in {
       val incoming = SmtpConnection.IncomingMessage("")
       val parsed = CommandParser.parse(incoming)

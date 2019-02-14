@@ -44,5 +44,13 @@ class SmtpConnectionSpec
 
       receiveOne(10.seconds).toString must startWith("250 ")
     }
+
+    "respond to a VRFY request" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("VRFY test.actor")
+
+      receiveOne(10.seconds).toString must startWith("252 ")
+    }
   }
 }

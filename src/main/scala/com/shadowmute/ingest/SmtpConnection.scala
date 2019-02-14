@@ -47,6 +47,9 @@ class SmtpConnection extends Actor {
         case Right(_: Quit) => {
           sender ! ClosingConnection("TTFN")
         }
+        case Right(_: Vrfy) => {
+          sender ! CannotVerifyUser()
+        }
         case _ =>
           sender() ! CommandNotRecognized()
       }
