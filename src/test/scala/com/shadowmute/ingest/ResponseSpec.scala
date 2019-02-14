@@ -10,6 +10,12 @@ class ResponseSpec extends WordSpec with MustMatchers {
       actual.toString must startWith("250 ")
     }
 
+    "Start with the correct response code in Closing Connection" in {
+      val actual = ClosingConnection("Testing")
+
+      actual.toString must startWith("221 ")
+    }
+
     "Start with the correct response code in CommandNotRecognized" in {
       val actual = CommandNotRecognized()
 

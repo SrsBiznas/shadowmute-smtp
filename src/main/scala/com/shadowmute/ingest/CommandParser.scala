@@ -12,6 +12,8 @@ object CommandParser {
       Right(Ehlo(verbAction.lift(1).getOrElse("")))
     } else if (verb == "noop") {
       Right(Noop(verbAction.lift(1).getOrElse("")))
+    } else if (verb == "quit") {
+      Right(Quit())
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

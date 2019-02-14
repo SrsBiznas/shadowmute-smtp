@@ -14,6 +14,9 @@ class SmtpConnection extends Actor {
         case Right(_: Noop) => {
           sender ! Ok("0x90")
         }
+        case Right(_: Quit) => {
+          sender ! ClosingConnection("TTFN")
+        }
         case _ =>
           sender() ! CommandNotRecognized
       }
@@ -40,6 +43,9 @@ class SmtpConnection extends Actor {
         }
         case Right(_: Noop) => {
           sender ! Ok("0x90")
+        }
+        case Right(_: Quit) => {
+          sender ! ClosingConnection("TTFN")
         }
         case _ =>
           sender() ! CommandNotRecognized()

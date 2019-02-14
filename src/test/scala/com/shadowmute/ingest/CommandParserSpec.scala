@@ -38,9 +38,18 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       parseResult mustBe a[Noop]
 
-      val ehlo: Noop = parseResult.asInstanceOf[Noop]
+      val noop: Noop = parseResult.asInstanceOf[Noop]
 
-      ehlo.content mustBe "sample.testing"
+      noop.content mustBe "sample.testing"
+    }
+
+    "parse a QUIT command" in {
+      val incoming = SmtpConnection.IncomingMessage("QUIT sample.testing")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Quit]
     }
 
     "Return command not recognized when empty" in {
