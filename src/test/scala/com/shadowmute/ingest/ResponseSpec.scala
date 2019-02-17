@@ -27,5 +27,17 @@ class ResponseSpec extends WordSpec with MustMatchers {
 
       actual.toString must startWith("252 ")
     }
+
+    "Start with the correct response code in RequestedActionNotTaken" in {
+      val actual = RequestedActionNotTaken("Test Reasons")
+
+      actual.toString must startWith("550 ")
+    }
+
+    "Start with the correct response code in SyntaxError" in {
+      val actual = SyntaxError()
+
+      actual.toString must startWith("501 ")
+    }
   }
 }

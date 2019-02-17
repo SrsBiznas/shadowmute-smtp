@@ -14,7 +14,7 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val helo: Helo = parseResult.asInstanceOf[Helo]
 
-      helo.content mustBe "sample.testing"
+      helo.domain mustBe "sample.testing"
     }
 
     "parse an EHLO command" in {
@@ -27,7 +27,7 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val ehlo: Ehlo = parseResult.asInstanceOf[Ehlo]
 
-      ehlo.content mustBe "sample.testing"
+      ehlo.domain mustBe "sample.testing"
     }
 
     "parse a NOOP command" in {
@@ -59,6 +59,99 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       val parseResult = parsed.right.value
 
       parseResult mustBe a[Vrfy]
+    }
+
+    "parse a basic MAIL command" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("MAIL FROM:<userx@y.foo.org>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Mail]
+
+      val mailResult = parseResult.asInstanceOf[Mail]
+
+      mailResult.reversePath mustBe Some("userx@y.foo.org")
+    }
+
+    "parse a MAIL with extra parameters command" in {
+      val incoming = SmtpConnection.IncomingMessage(
+        "MAIL FROM:<userx@y.foo.org> some extension parameters")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Mail]
+
+      val mailResult = parseResult.asInstanceOf[Mail]
+
+      mailResult.reversePath mustBe Some("userx@y.foo.org")
+    }
+
+    "parse a MAIL without a FROM" in {
+      val incoming = SmtpConnection.IncomingMessage("MAIL <userx@y.foo.org>")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
+    }
+
+    "parse a MAIL missing the second half" in {
+      val incoming = SmtpConnection.IncomingMessage("MAIL")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
+    }
+
+    "parse a MAIL with an invalid return-path" in {
+      val incoming = SmtpConnection.IncomingMessage("MAIL FROM:userx@y.foo.org")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[RequestedActionNotTaken]
+    }
+
+    "parse a MAIL command with an invalid email in return path" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("MAIL FROM:<userx@y.foo@org>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[RequestedActionNotTaken]
+    }
+
+    "parse a MAIL command with a null return path" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("MAIL FROM:<>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Mail]
+
+      val mailResult = parseResult.asInstanceOf[Mail]
+
+      mailResult.reversePath mustBe empty
+    }
+
+    "parse a MAIL command with a broken truncation" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("MAIL FRO")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
     }
 
     "Return command not recognized when empty" in {
