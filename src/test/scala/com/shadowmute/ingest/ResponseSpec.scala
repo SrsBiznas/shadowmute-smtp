@@ -39,5 +39,12 @@ class ResponseSpec extends WordSpec with MustMatchers {
 
       actual.toString must startWith("501 ")
     }
+
+    "Start with the correct response code in TooManyRecipients" in {
+      val actual = TooManyRecipients()
+
+      actual.toString must startWith("452 ")
+    }
+
   }
 }

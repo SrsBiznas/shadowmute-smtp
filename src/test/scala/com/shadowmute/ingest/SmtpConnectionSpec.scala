@@ -75,7 +75,7 @@ class SmtpConnectionSpec
     }
 
     class IncomingMessageActor extends SmtpConnection {
-      startWith(IncomingMessage, MailSession("test", None, Nil))
+      startWith(IncomingMessage, MailSession("test", None, List()))
     }
 
     "respond to QUIT in the incoming message state" in {
@@ -104,6 +104,47 @@ class SmtpConnectionSpec
       smtpConnection ! SmtpConnection.IncomingMessage("MAIL FROM:<new@sender>")
 
       receiveOne(10.seconds).toString must startWith("250 ")
+    }
+
+    "Respond with OK when Rcpt command is received in MailSession state" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("RCPT TO:<new@recip>")
+
+      receiveOne(10.seconds).toString must startWith("250 ")
+    }
+
+    "Respond with Too many Recipients when 101st Rcpt command is received in MailSession state" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      for (i <- 1 to 100) {
+        (smtpConnection ! SmtpConnection.IncomingMessage(
+          s"RCPT TO:<new@receipt.${i}>"))
+      }
+      // Discard the 100 responses
+      receiveN(100)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("RCPT TO:<new@receipt>")
+      receiveOne(10.seconds).toString must startWith("452 ")
+    }
+
+    "Respond with command out of order Rcpt command is received in Initial state" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        "RCPT TO:<test@testing.source>")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
+    }
+
+    "Respond with command out of order Rcpt command is received in Greeted state" in {
+      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        "RCPT TO:<test@testing.source>")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
     }
   }
 }

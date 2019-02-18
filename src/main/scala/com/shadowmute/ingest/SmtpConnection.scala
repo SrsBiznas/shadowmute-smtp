@@ -13,8 +13,13 @@ case object Uninitialized extends Data
 case class InitialSession(sourceDomain: String) extends Data
 case class MailSession(sourceDomain: String,
                        reversePath: Option[String],
-                       recipients: Seq[String])
-    extends Data
+                       recipients: List[String])
+    extends Data {
+  def withRecipient(recipient: String) = {
+    val newRecipients = recipient :: recipients
+    MailSession(sourceDomain, reversePath, newRecipients)
+  }
+}
 
 class SmtpConnection extends Actor with FSM[State, Data] {
 
@@ -30,6 +35,9 @@ class SmtpConnection extends Actor with FSM[State, Data] {
       }
       case _: Vrfy => {
         CannotVerifyUser()
+      }
+      case _: Rcpt => {
+        CommandOutOfSequence()
       }
       case _ => CommandNotImplemented()
     }
@@ -91,13 +99,12 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 stay()
               }
               case mail: Mail => {
-                sender() ! Ok("OK")
+                sender() ! Ok("Ok")
                 goto(IncomingMessage) using MailSession(session.sourceDomain,
                                                         mail.reversePath,
                                                         Nil)
               }
               case unmatched: Verb => {
-                Logger().debug("[97]")
                 sender() ! commonCommands(unmatched)
                 stay()
               }
@@ -123,12 +130,21 @@ class SmtpConnection extends Actor with FSM[State, Data] {
             stay()
           }, {
             _ match {
+              case rcptVerb: Rcpt => {
+                if (session.recipients.length < 100) {
+                  sender() ! Ok("Ok")
+                  goto(IncomingMessage) using session.withRecipient(
+                    rcptVerb.recipient)
+                } else {
+                  sender ! TooManyRecipients()
+                  stay()
+                }
+              }
               case _: Mail => {
                 sender() ! CommandOutOfSequence()
                 stay()
               }
               case unmatched: Verb => {
-                Logger().debug("[97]")
                 sender() ! commonCommands(unmatched)
                 stay()
               }

@@ -154,6 +154,95 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       parseResult mustBe a[SyntaxError]
     }
 
+    "parse a basic RCPT command" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("RCPT TO:<userx@y.foo.org>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Rcpt]
+
+      val mailResult = parseResult.asInstanceOf[Rcpt]
+
+      mailResult.recipient mustBe "userx@y.foo.org"
+    }
+
+    "parse a RCPT with extra parameters command" in {
+      val incoming = SmtpConnection.IncomingMessage(
+        "RCPT TO:<userx@y.foo.org> some extension parameters")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Rcpt]
+
+      val mailResult = parseResult.asInstanceOf[Rcpt]
+
+      mailResult.recipient mustBe "userx@y.foo.org"
+    }
+
+    "parse a RCPT without a TO" in {
+      val incoming = SmtpConnection.IncomingMessage("RCPT <userx@y.foo.org>")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
+    }
+
+    "parse a RCPT missing the second half" in {
+      val incoming = SmtpConnection.IncomingMessage("RCPT")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
+    }
+
+    "parse a RCPT with an invalid destination" in {
+      val incoming = SmtpConnection.IncomingMessage("RCPT TO:userx@y.foo.org")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[RequestedActionNotTaken]
+    }
+
+    "parse a RCPT command with an invalid email in destination path" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("RCPT TO:<userx@y.foo@org>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[RequestedActionNotTaken]
+    }
+
+    "parse a RCPT command with a null destination path" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("RCPT TO:<>")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[MailboxNotAllowed]
+    }
+
+    "parse a RCPT command with a broken truncation" in {
+      val incoming =
+        SmtpConnection.IncomingMessage("RCPT T")
+
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.left.value
+
+      parseResult mustBe a[SyntaxError]
+    }
+
     "Return command not recognized when empty" in {
       val incoming = SmtpConnection.IncomingMessage("")
       val parsed = CommandParser.parse(incoming)

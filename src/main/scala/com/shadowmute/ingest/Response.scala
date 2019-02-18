@@ -22,6 +22,12 @@ case class CannotVerifyUser() extends Response {
   }
 }
 
+case class TooManyRecipients() extends Response {
+  override def toString = {
+    "452 Too many recipients"
+  }
+}
+
 case class RequestedActionNotTaken(content: String) extends Response {
   override def toString = {
     s"550 ${content}"
@@ -43,6 +49,12 @@ case class CommandNotImplemented() extends Response {
 case class CommandOutOfSequence() extends Response {
   override def toString = {
     "503 Command out of sequence"
+  }
+}
+
+case class MailboxNotAllowed() extends Response {
+  override def toString = {
+    "553 Mailbox not allowed"
   }
 }
 

@@ -6,7 +6,7 @@ object CommandParser {
     email.split("@").length == 2
   }
 
-  def parseMailVerb(contents: String) = {
+  def parseMailVerb(contents: String): Either[Response, Verb] = {
     val parts = contents.split(" ", 2)
 
     val reversePathArg = parts(0).trim
@@ -23,6 +23,35 @@ object CommandParser {
           Right(Mail(None, parts.lift(1)))
         } else if (validateEmailAddress(reversePathInternal)) {
           Right(Mail(Some(reversePathInternal), parts.lift(1)))
+        } else {
+          Left(RequestedActionNotTaken("Invalid Email Address"))
+        }
+
+      } else {
+        Left(RequestedActionNotTaken("Invalid return path"))
+      }
+    } else {
+      Left(SyntaxError())
+    }
+  }
+
+  def parseRcptVerb(contents: String): Either[Response, Verb] = {
+    val parts = contents.split(" ", 2)
+
+    val recipientPathArg = parts(0).trim
+
+    if (recipientPathArg.nonEmpty && recipientPathArg
+          .take(3)
+          .toLowerCase == "to:") {
+      val recipientPath = recipientPathArg.drop(3)
+
+      if (recipientPath.take(1) == "<" && recipientPath.takeRight(1) == ">") {
+        val recipientPathInternal = recipientPath.drop(1).dropRight(1)
+
+        if (recipientPathInternal.length == 0) {
+          Left(MailboxNotAllowed())
+        } else if (validateEmailAddress(recipientPathInternal)) {
+          Right(Rcpt(recipientPathInternal, parts.lift(1)))
         } else {
           Left(RequestedActionNotTaken("Invalid Email Address"))
         }
@@ -52,6 +81,8 @@ object CommandParser {
       Right(Vrfy(verbAction.lift(1).getOrElse("")))
     } else if (verb == "mail") {
       parseMailVerb(verbAction.lift(1).getOrElse(""))
+    } else if (verb == "rcpt") {
+      parseRcptVerb(verbAction.lift(1).getOrElse(""))
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())
