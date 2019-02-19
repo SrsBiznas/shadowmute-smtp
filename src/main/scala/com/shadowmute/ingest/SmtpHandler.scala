@@ -46,6 +46,9 @@ class SmtpHandler(system: ActorSystem) {
 
       // Catch the connection close requests
       .takeWhile(_.isInstanceOf[ClosingConnection] == false, inclusive = true)
+
+      // If ReadNext, don't bother replying
+      .filter(_.isInstanceOf[ReadNext] == false)
       .map(_ + NL)
       .map(ByteString(_))
 

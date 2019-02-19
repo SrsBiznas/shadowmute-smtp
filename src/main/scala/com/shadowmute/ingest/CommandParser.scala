@@ -83,6 +83,8 @@ object CommandParser {
       parseMailVerb(verbAction.lift(1).getOrElse(""))
     } else if (verb == "rcpt") {
       parseRcptVerb(verbAction.lift(1).getOrElse(""))
+    } else if (verb == "data") {
+      Right(OpenDataChannel())
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

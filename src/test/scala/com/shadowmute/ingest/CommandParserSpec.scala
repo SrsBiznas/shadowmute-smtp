@@ -260,5 +260,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       parseResult mustBe a[CommandNotRecognized]
     }
+
+    "Return 354 when DATA command is received" in {
+      val incoming = SmtpConnection.IncomingMessage("DATA")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[OpenDataChannel]
+    }
   }
 }

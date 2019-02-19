@@ -7,6 +7,7 @@ sealed trait State
 case object Init extends State
 case object Greeted extends State
 case object IncomingMessage extends State
+case object DataChannel extends State
 
 sealed trait Data
 case object Uninitialized extends Data
@@ -18,6 +19,35 @@ case class MailSession(sourceDomain: String,
   def withRecipient(recipient: String) = {
     val newRecipients = recipient :: recipients
     MailSession(sourceDomain, reversePath, newRecipients)
+  }
+
+  def openDataChannel() = {
+    DataChannel(sourceDomain, reversePath, recipients, Vector.empty)
+  }
+}
+
+case class DataChannel(
+    sourceDomain: String,
+    reversePath: Option[String],
+    recipients: List[String],
+    buffer: Vector[String]
+) extends Data {
+  def withMoreData(additional: String) = {
+    this.copy(buffer = buffer :+ additional)
+  }
+
+  override def toString() = {
+    val firstRcpt = recipients.headOption.getOrElse("??missing??")
+    val output = s"""
+    |TO: <${firstRcpt}>
+    |FROM: <${reversePath.getOrElse("")}>
+    |BODY:
+    |${buffer.mkString("\n")}
+    |------------------------
+    |
+    """.stripMargin
+
+    output
   }
 }
 
@@ -37,6 +67,9 @@ class SmtpConnection extends Actor with FSM[State, Data] {
         CannotVerifyUser()
       }
       case _: Rcpt => {
+        CommandOutOfSequence()
+      }
+      case _: OpenDataChannel => {
         CommandOutOfSequence()
       }
       case _ => CommandNotImplemented()
@@ -113,7 +146,6 @@ class SmtpConnection extends Actor with FSM[State, Data] {
         )
     }
     case _ => {
-      Logger().debug("[107]")
       sender() ! CommandNotRecognized()
       stay()
     }
@@ -144,6 +176,10 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 sender() ! CommandOutOfSequence()
                 stay()
               }
+              case _: OpenDataChannel => {
+                sender ! StartMailInput()
+                goto(DataChannel) using session.openDataChannel()
+              }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)
                 stay()
@@ -156,6 +192,32 @@ class SmtpConnection extends Actor with FSM[State, Data] {
       Logger().debug("[118]")
       sender() ! CommandNotRecognized()
       stay()
+    }
+  }
+
+  when(DataChannel) {
+    case Event(incoming: SmtpConnection.IncomingMessage,
+               session: DataChannel) => {
+      val dataLine = incoming.message
+
+      dataLine match {
+        case "." => {
+          Logger().debug(session.toString())
+          // FEATURE: #25
+          // TODO: actually store the message
+          sender() ! Ok("Message received")
+
+          goto(Greeted) using (InitialSession(session.sourceDomain))
+        }
+        case dotStarted: String if dotStarted.startsWith(".") => {
+          sender() ! ReadNext()
+          stay() using session.withMoreData(dataLine.drop(1))
+        }
+        case _: String => {
+          sender() ! ReadNext()
+          stay() using session.withMoreData(dataLine)
+        }
+      }
     }
   }
 }

@@ -146,5 +146,89 @@ class SmtpConnectionSpec
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
+
+    "Open a data channel when the Data command is received" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        s"RCPT TO:<new@receipt.data>")
+
+      receiveOne(10.seconds)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("DATA")
+      receiveOne(10.seconds).toString must startWith("354 ")
+    }
+
+    "Open and close a data channel with the termination sequence" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        s"RCPT TO:<new@receipt.data>")
+
+      receiveOne(10.seconds)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("DATA")
+      val dataOpen = receiveOne(10.seconds)
+      Logger().debug(s"DO[174]: ${dataOpen}")
+
+      smtpConnection ! SmtpConnection.IncomingMessage("data one")
+      receiveOne(10.seconds) mustBe a[ReadNext]
+
+      smtpConnection ! SmtpConnection.IncomingMessage("data two")
+      receiveOne(10.seconds) mustBe a[ReadNext]
+
+      smtpConnection ! SmtpConnection.IncomingMessage(".")
+      val terminate = receiveOne(10.seconds)
+      Logger().debug(s"DO[182]: ${terminate}")
+      terminate.toString must startWith("250 ")
+
+      smtpConnection ! SmtpConnection.IncomingMessage("HELO")
+      receiveOne(10.seconds).toString must startWith("250 ")
+    }
+
+    "Respond with command out of order Data command is received in Initial state" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+      smtpConnection ! SmtpConnection.IncomingMessage("Data")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
+    }
+
+    "Respond with command out of order Data command is received in Greeted state" in {
+      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("Data")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
+    }
+
+    "Trim a leading decimal for data transparency" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        s"RCPT TO:<new@receipt.data>")
+
+      receiveOne(10.seconds)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("DATA")
+      val dataOpen = receiveOne(10.seconds)
+      Logger().debug(s"DO[174]: ${dataOpen}")
+
+      smtpConnection ! SmtpConnection.IncomingMessage("data one")
+      receiveOne(10.seconds) mustBe a[ReadNext]
+
+      smtpConnection ! SmtpConnection.IncomingMessage("..leading decimal")
+      receiveOne(10.seconds) mustBe a[ReadNext]
+
+      smtpConnection ! SmtpConnection.IncomingMessage(".")
+      val terminate = receiveOne(10.seconds)
+      Logger().debug(s"DO[182]: ${terminate}")
+      terminate.toString must startWith("250 ")
+
+      smtpConnection ! SmtpConnection.IncomingMessage("HELO")
+      receiveOne(10.seconds).toString must startWith("250 ")
+    }
   }
 }

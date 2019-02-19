@@ -58,6 +58,14 @@ case class MailboxNotAllowed() extends Response {
   }
 }
 
+case class StartMailInput() extends Response {
+  override def toString = {
+    "354 Start mail input; end with <CRLF>.<CRLF>"
+  }
+}
+
+case class ReadNext() extends Response {}
+
 //  451: RequestedActionAborted,
 //  550: RequestedActionNotTaken,
 //  553: MailboxNotAllowed,
