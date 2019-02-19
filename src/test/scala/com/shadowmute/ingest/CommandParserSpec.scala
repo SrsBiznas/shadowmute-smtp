@@ -269,5 +269,16 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       parseResult mustBe a[OpenDataChannel]
     }
+
+    "parse a RSET command" in {
+      val incoming = SmtpConnection.IncomingMessage("RSET")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[Rset]
+
+      val rset: Rset = parseResult.asInstanceOf[Rset]
+    }
   }
 }

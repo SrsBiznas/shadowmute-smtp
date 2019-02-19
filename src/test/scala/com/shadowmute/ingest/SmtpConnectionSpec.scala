@@ -1,6 +1,7 @@
 package com.shadowmute.ingest
 
 import akka.actor.{ActorSystem, Props}
+import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack}
 import akka.testkit.{ImplicitSender, TestKit}
 
 import org.scalatest._
@@ -97,6 +98,16 @@ class SmtpConnectionSpec
       receiveOne(10.seconds).toString must startWith("503 ")
     }
 
+    "send an out of order response when mail is called during init" in {
+      val smtpConnection =
+        system.actorOf(SmtpConnection.props)
+
+      smtpConnection ! SmtpConnection.IncomingMessage(
+        "MAIL FROM:<early@sender>")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
+    }
+
     "Respond with OK when Mail command is received" in {
       val smtpConnection =
         system.actorOf(Props(classOf[GreetedActor], this))
@@ -143,6 +154,15 @@ class SmtpConnectionSpec
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         "RCPT TO:<test@testing.source>")
+
+      receiveOne(10.seconds).toString must startWith("503 ")
+    }
+
+    "Respond with command out of order when Data command is received without recipients" in {
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("DATA")
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
@@ -229,6 +249,78 @@ class SmtpConnectionSpec
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO")
       receiveOne(10.seconds).toString must startWith("250 ")
+    }
+
+    "Ensure a Reset succeeds on an initial actor" in {
+      val smtpConnection = system.actorOf(SmtpConnection.props)
+
+      smtpConnection ! SmtpConnection.IncomingMessage("RSET")
+      receiveOne(10.seconds) mustBe a[Ok]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Init
+    }
+
+    "Ensure a Reset succeeds on an greeted actor" in {
+
+      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("RSET")
+      receiveOne(10.seconds) mustBe a[Ok]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Greeted
+    }
+
+    "Ensure a Reset succeeds on an incoming message actor" in {
+
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("RSET")
+      receiveOne(10.seconds) mustBe a[Ok]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Greeted
+    }
+
+    "Ensure a Helo resets on an incoming message actor" in {
+
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("HELO source.domain")
+      receiveOne(10.seconds) mustBe a[Ok]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Greeted
+    }
+
+    "Ensure a Ehlo resets on an incoming message actor" in {
+
+      val smtpConnection =
+        system.actorOf(Props(classOf[IncomingMessageActor], this))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("EHLO source.domain")
+      receiveOne(10.seconds) mustBe a[Ok]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Greeted
     }
   }
 }

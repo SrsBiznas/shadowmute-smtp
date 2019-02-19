@@ -18,3 +18,5 @@ case class Mail(reversePath: Option[String], parameters: Option[String])
 case class Rcpt(recipient: String, parameters: Option[String]) extends Verb
 
 case class OpenDataChannel() extends Verb
+
+case class Rset() extends Verb

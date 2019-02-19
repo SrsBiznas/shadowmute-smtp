@@ -69,6 +69,9 @@ class SmtpConnection extends Actor with FSM[State, Data] {
       case _: Rcpt => {
         CommandOutOfSequence()
       }
+      case _: Mail => {
+        CommandOutOfSequence()
+      }
       case _: OpenDataChannel => {
         CommandOutOfSequence()
       }
@@ -101,6 +104,10 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 Logger().debug(s"[*] EHLO from ${ehlo.domain}")
                 sender() ! Ok("shadowmute.com")
                 goto(Greeted) using InitialSession(ehlo.domain)
+              }
+              case _: Rset => {
+                sender() ! Ok("Buffers reset")
+                stay()
               }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)
@@ -136,6 +143,10 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 goto(IncomingMessage) using MailSession(session.sourceDomain,
                                                         mail.reversePath,
                                                         Nil)
+              }
+              case _: Rset => {
+                sender() ! Ok("Buffers reset")
+                stay()
               }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)
@@ -177,8 +188,25 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 stay()
               }
               case _: OpenDataChannel => {
-                sender ! StartMailInput()
-                goto(DataChannel) using session.openDataChannel()
+                if (session.recipients.length == 0) {
+                  sender ! CommandOutOfSequence()
+                  stay()
+                } else {
+                  sender ! StartMailInput()
+                  goto(DataChannel) using session.openDataChannel()
+                }
+              }
+              case _: Rset => {
+                sender() ! Ok("Buffers reset")
+                goto(Greeted) using InitialSession(session.sourceDomain)
+              }
+              case _: Helo => {
+                sender() ! Ok("Buffers reset")
+                goto(Greeted) using InitialSession(session.sourceDomain)
+              }
+              case _: Ehlo => {
+                sender() ! Ok("Buffers reset")
+                goto(Greeted) using InitialSession(session.sourceDomain)
               }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)

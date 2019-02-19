@@ -85,6 +85,8 @@ object CommandParser {
       parseRcptVerb(verbAction.lift(1).getOrElse(""))
     } else if (verb == "data") {
       Right(OpenDataChannel())
+    } else if (verb == "rset") {
+      Right(Rset())
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())
