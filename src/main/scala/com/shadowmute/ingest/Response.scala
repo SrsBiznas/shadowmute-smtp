@@ -2,8 +2,23 @@ package com.shadowmute.ingest
 
 class Response()
 
-case class Ok(content: String) extends Response {
-  override def toString = s"250 ${content}"
+case class Ok(content: List[String]) extends Response {
+  def this(single: String) = this(List(single))
+
+  def prependCode(elems: List[String]): List[String] = {
+    elems match {
+      case Nil          => Nil
+      case elem :: Nil  => List(s"250 ${elem}")
+      case elem :: tail => s"250-${elem}" :: prependCode(tail)
+    }
+  }
+  override def toString = {
+    prependCode(content) mkString (SmtpHandler.NL)
+  }
+}
+
+object Ok {
+  def apply(content: String) = new Ok(content)
 }
 
 case class ClosingConnection(content: String) extends Response {

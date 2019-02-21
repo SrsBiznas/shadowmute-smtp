@@ -15,9 +15,7 @@ class SmtpHandler(system: ActorSystem) {
 
   implicit val sys = system
 
-  val maxumumMessageSize = 256
-
-  val NL = "\r\n"
+  val maxumumMessageSize = 1000
 
   def handle(c: IncomingConnection)(implicit m: Materializer) = {
 
@@ -32,7 +30,7 @@ class SmtpHandler(system: ActorSystem) {
     implicit val timeout: Timeout = 5.seconds
 
     val handlerFlow = Flow[ByteString]
-      .via(Framing.delimiter(ByteString(NL),
+      .via(Framing.delimiter(ByteString(SmtpHandler.NL),
                              maximumFrameLength = maxumumMessageSize,
                              allowTruncation = true))
       .map(_.utf8String)
@@ -49,9 +47,13 @@ class SmtpHandler(system: ActorSystem) {
 
       // If ReadNext, don't bother replying
       .filter(_.isInstanceOf[ReadNext] == false)
-      .map(_ + NL)
+      .map(_ + SmtpHandler.NL)
       .map(ByteString(_))
 
     c.handleWith(handlerFlow)
   }
+}
+
+object SmtpHandler {
+  val NL = "\r\n"
 }

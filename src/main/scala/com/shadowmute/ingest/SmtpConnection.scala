@@ -1,6 +1,6 @@
 package com.shadowmute.ingest
 
-import akka.actor.{Actor, FSM, Props}
+import akka.actor.{Actor, ActorRef, FSM, Props}
 
 sealed trait State
 
@@ -101,9 +101,7 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 goto(Greeted) using InitialSession(helo.domain)
               }
               case ehlo: Ehlo => {
-                Logger().debug(s"[*] EHLO from ${ehlo.domain}")
-                sender() ! Ok("shadowmute.com")
-                goto(Greeted) using InitialSession(ehlo.domain)
+                replyToEhlo(sender(), ehlo.domain)
               }
               case _: Rset => {
                 sender() ! Ok("Buffers reset")
@@ -135,8 +133,7 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 stay()
               }
               case _: Ehlo => {
-                sender() ! Ok("shadowmute.com")
-                stay()
+                replyToEhlo(sender(), session.sourceDomain)
               }
               case mail: Mail => {
                 sender() ! Ok("Ok")
@@ -160,6 +157,13 @@ class SmtpConnection extends Actor with FSM[State, Data] {
       sender() ! CommandNotRecognized()
       stay()
     }
+  }
+
+  def replyToEhlo(sender: ActorRef, sourceDomain: String) = {
+
+    Logger().debug(s"[*] EHLO from ${sourceDomain}")
+    sender ! Ok(List("shadowmute.com", "8BITMIME"))
+    goto(Greeted) using InitialSession(sourceDomain)
   }
 
   when(IncomingMessage) {
@@ -205,8 +209,7 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 goto(Greeted) using InitialSession(session.sourceDomain)
               }
               case _: Ehlo => {
-                sender() ! Ok("Buffers reset")
-                goto(Greeted) using InitialSession(session.sourceDomain)
+                replyToEhlo(sender(), session.sourceDomain)
               }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)

@@ -35,7 +35,13 @@ class SmtpConnectionSpec
 
       smtpConnection ! SmtpConnection.IncomingMessage("EHLO test.actor")
 
-      receiveOne(10.seconds).toString must startWith("250 ")
+      val expected = receiveOne(10.seconds).toString
+
+      val grouped = expected.split(SmtpHandler.NL)
+      grouped.length mustBe 2
+
+      grouped(0) must startWith("250-")
+      grouped(1) must startWith("250 ")
     }
 
     "respond to a NOOP request" in {
