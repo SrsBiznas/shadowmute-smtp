@@ -23,3 +23,24 @@ scalacOptions ++= Seq("-Ywarn-unused",
                       "-Ywarn-dead-code")
 
 scalafmtOnCompile in ThisBuild := true
+
+enablePlugins(JavaAppPackaging)
+// Required to run (ba)sh commands
+enablePlugins(AshScriptPlugin)
+enablePlugins(DockerPlugin)
+
+// Due to the fact that Docker is not available in CI, use this
+import com.typesafe.sbt.packager.docker.DockerVersion
+dockerVersion := Some(DockerVersion(18, 9, 2, None))
+
+daemonUserUid in Docker := Some("1000")
+daemonUser in Docker := "daemon"
+
+dockerBaseImage := "openjdk:8-jre-alpine"
+dockerUpdateLatest := true
+
+dockerExposedPorts ++= Seq(2025)
+
+dockerEntrypoint := Seq("bin/shadowmute-ingest",
+                        "-Dconfig.file=/etc/shadowmute/default.conf",
+                        "-Dlogger.file=/etc/shadowmute/logger.xml")

@@ -14,8 +14,8 @@ class StreamTcpServer(system: ActorSystem) {
   implicit val sys = system
   implicit val materializer = ActorMaterializer()
 
-  val host = "127.0.0.1"
-  val port = 1025
+  val host = "0.0.0.0"
+  val port = 2025
 
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
     Tcp().bind(host, port)
