@@ -162,7 +162,7 @@ class SmtpConnection extends Actor with FSM[State, Data] {
   def replyToEhlo(sender: ActorRef, sourceDomain: String) = {
 
     Logger().debug(s"[*] EHLO from ${sourceDomain}")
-    sender ! Ok(List("shadowmute.com", "8BITMIME"))
+    sender ! Ok(List("shadowmute.com", "8BITMIME", "SMTPUTF8"))
     goto(Greeted) using InitialSession(sourceDomain)
   }
 

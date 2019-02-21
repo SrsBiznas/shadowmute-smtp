@@ -38,10 +38,17 @@ class SmtpConnectionSpec
       val expected = receiveOne(10.seconds).toString
 
       val grouped = expected.split(SmtpHandler.NL)
-      grouped.length mustBe 2
+      grouped.length mustBe 3
 
       grouped(0) must startWith("250-")
-      grouped(1) must startWith("250 ")
+      grouped(1) must startWith("250-")
+      grouped(2) must startWith("250 ")
+
+      val trimmed = grouped.map(_.drop(4))
+      val asSet = trimmed.toSet
+
+      asSet must contain("SMTPUTF8")
+      asSet must contain("8BITMIME")
     }
 
     "respond to a NOOP request" in {
