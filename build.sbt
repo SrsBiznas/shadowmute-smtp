@@ -10,13 +10,17 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe" % "config" % "1.3.2",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+  "com.typesafe.play" %% "play-json" % "2.6.10",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
 
 mainClass in (Compile, run) := Some(
   "com.shadowmute.ingest.ShadowmuteApplication")
+
+unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
 scalacOptions ++= Seq("-Ywarn-unused",
                       "-Ywarn-unused-import",

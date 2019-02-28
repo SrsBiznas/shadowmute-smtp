@@ -2,11 +2,22 @@ package com.shadowmute.ingest
 
 import akka.actor.{ActorSystem, Props}
 import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack}
+import akka.pattern.ask
 import akka.testkit.{ImplicitSender, TestKit}
+import akka.util.Timeout
 
 import org.scalatest._
 
+import java.net.InetSocketAddress
+
+import java.util.UUID
+import java.nio.file.Files
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.io.Source
+
+import configuration.{Configuration, RuntimeConfiguration}
 
 class SmtpConnectionSpec
     extends TestKit(ActorSystem("SmtpConnectionSpec"))
@@ -14,16 +25,46 @@ class SmtpConnectionSpec
     with WordSpecLike
     with MustMatchers {
   "SMTP Connection" must {
-    "send a banner when in an initial state" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
 
-      smtpConnection ! SmtpConnection.SendBanner
+    class ConnectedActor(configuration: Configuration)
+        extends SmtpConnection(configuration) {
+      startWith(
+        Connected,
+        Connection(new InetSocketAddress("1.2.3.4", 25))
+      )
+    }
+
+    class GreetedActor(configuration: Configuration)
+        extends SmtpConnection(configuration) {
+      startWith(
+        Greeted,
+        InitialSession(new InetSocketAddress("1.2.3.4", 25), "test")
+      )
+    }
+
+    class IncomingMessageActor(configuration: Configuration)
+        extends SmtpConnection(configuration) {
+      startWith(
+        IncomingMessage,
+        MailSession(new InetSocketAddress("1.2.3.4", 25), "test", None, List())
+      )
+    }
+
+    val basicConfiguration = new RuntimeConfiguration()
+
+    "send a banner when in an initial state" in {
+      val smtpConnection =
+        system.actorOf(Props(new SmtpConnection(basicConfiguration)))
+
+      smtpConnection ! SmtpConnection.SendBanner(
+        new InetSocketAddress("1.2.3.4", 25))
 
       receiveOne(10.seconds).toString must startWith("220 ")
     }
 
     "respond to a HELO request" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO test.actor")
 
@@ -31,7 +72,8 @@ class SmtpConnectionSpec
     }
 
     "respond to a EHLO request" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("EHLO test.actor")
 
@@ -52,7 +94,8 @@ class SmtpConnectionSpec
     }
 
     "respond to a NOOP request" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("NOOP test.actor")
 
@@ -60,7 +103,8 @@ class SmtpConnectionSpec
     }
 
     "respond to a VRFY request" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("VRFY test.actor")
 
@@ -68,33 +112,27 @@ class SmtpConnectionSpec
     }
 
     "respond to QUIT in the initial state" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("QUIT")
 
       receiveOne(10.seconds).toString must startWith("221 ")
-    }
-
-    class GreetedActor extends SmtpConnection {
-      startWith(Greeted, InitialSession("test"))
     }
 
     "respond to QUIT in the greeted state" in {
 
-      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+      val smtpConnection =
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("QUIT")
 
       receiveOne(10.seconds).toString must startWith("221 ")
     }
 
-    class IncomingMessageActor extends SmtpConnection {
-      startWith(IncomingMessage, MailSession("test", None, List()))
-    }
-
     "respond to QUIT in the incoming message state" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("QUIT")
 
@@ -103,7 +141,7 @@ class SmtpConnectionSpec
 
     "send an out of order response when mail is called twice" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         "MAIL FROM:<duplicated@sender>")
@@ -111,9 +149,9 @@ class SmtpConnectionSpec
       receiveOne(10.seconds).toString must startWith("503 ")
     }
 
-    "send an out of order response when mail is called during init" in {
+    "send an out of order response when mail is called during connected" in {
       val smtpConnection =
-        system.actorOf(SmtpConnection.props)
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         "MAIL FROM:<early@sender>")
@@ -123,7 +161,7 @@ class SmtpConnectionSpec
 
     "Respond with OK when Mail command is received" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[GreetedActor], this))
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("MAIL FROM:<new@sender>")
 
@@ -132,7 +170,7 @@ class SmtpConnectionSpec
 
     "Respond with OK when Rcpt command is received in MailSession state" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("RCPT TO:<new@recip>")
 
@@ -141,7 +179,7 @@ class SmtpConnectionSpec
 
     "Respond with Too many Recipients when 101st Rcpt command is received in MailSession state" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       for (i <- 1 to 100) {
         (smtpConnection ! SmtpConnection.IncomingMessage(
@@ -154,8 +192,10 @@ class SmtpConnectionSpec
       receiveOne(10.seconds).toString must startWith("452 ")
     }
 
-    "Respond with command out of order Rcpt command is received in Initial state" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+    "Respond with command out of order Rcpt command is received in Connected state" in {
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
+
       smtpConnection ! SmtpConnection.IncomingMessage(
         "RCPT TO:<test@testing.source>")
 
@@ -163,7 +203,8 @@ class SmtpConnectionSpec
     }
 
     "Respond with command out of order Rcpt command is received in Greeted state" in {
-      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+      val smtpConnection =
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         "RCPT TO:<test@testing.source>")
@@ -173,7 +214,7 @@ class SmtpConnectionSpec
 
     "Respond with command out of order when Data command is received without recipients" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("DATA")
 
@@ -182,7 +223,7 @@ class SmtpConnectionSpec
 
     "Open a data channel when the Data command is received" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         s"RCPT TO:<new@receipt.data>")
@@ -195,7 +236,7 @@ class SmtpConnectionSpec
 
     "Open and close a data channel with the termination sequence" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         s"RCPT TO:<new@receipt.data>")
@@ -203,8 +244,7 @@ class SmtpConnectionSpec
       receiveOne(10.seconds)
 
       smtpConnection ! SmtpConnection.IncomingMessage("DATA")
-      val dataOpen = receiveOne(10.seconds)
-      Logger().debug(s"DO[174]: ${dataOpen}")
+      receiveOne(10.seconds)
 
       smtpConnection ! SmtpConnection.IncomingMessage("data one")
       receiveOne(10.seconds) mustBe a[ReadNext]
@@ -214,7 +254,6 @@ class SmtpConnectionSpec
 
       smtpConnection ! SmtpConnection.IncomingMessage(".")
       val terminate = receiveOne(10.seconds)
-      Logger().debug(s"DO[182]: ${terminate}")
       terminate.toString must startWith("250 ")
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO")
@@ -222,14 +261,16 @@ class SmtpConnectionSpec
     }
 
     "Respond with command out of order Data command is received in Initial state" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new SmtpConnection(basicConfiguration)))
       smtpConnection ! SmtpConnection.IncomingMessage("Data")
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
 
     "Respond with command out of order Data command is received in Greeted state" in {
-      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+      val smtpConnection =
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("Data")
 
@@ -238,7 +279,7 @@ class SmtpConnectionSpec
 
     "Trim a leading decimal for data transparency" in {
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
         s"RCPT TO:<new@receipt.data>")
@@ -246,8 +287,7 @@ class SmtpConnectionSpec
       receiveOne(10.seconds)
 
       smtpConnection ! SmtpConnection.IncomingMessage("DATA")
-      val dataOpen = receiveOne(10.seconds)
-      Logger().debug(s"DO[174]: ${dataOpen}")
+      receiveOne(10.seconds)
 
       smtpConnection ! SmtpConnection.IncomingMessage("data one")
       receiveOne(10.seconds) mustBe a[ReadNext]
@@ -257,7 +297,6 @@ class SmtpConnectionSpec
 
       smtpConnection ! SmtpConnection.IncomingMessage(".")
       val terminate = receiveOne(10.seconds)
-      Logger().debug(s"DO[182]: ${terminate}")
       terminate.toString must startWith("250 ")
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO")
@@ -265,7 +304,8 @@ class SmtpConnectionSpec
     }
 
     "Ensure a Reset succeeds on an initial actor" in {
-      val smtpConnection = system.actorOf(SmtpConnection.props)
+      val smtpConnection =
+        system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("RSET")
       receiveOne(10.seconds) mustBe a[Ok]
@@ -274,12 +314,13 @@ class SmtpConnectionSpec
       val actorState =
         receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
 
-      actorState.state mustBe Init
+      actorState.state mustBe Connected
     }
 
     "Ensure a Reset succeeds on an greeted actor" in {
 
-      val smtpConnection = system.actorOf(Props(classOf[GreetedActor], this))
+      val smtpConnection =
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("RSET")
       receiveOne(10.seconds) mustBe a[Ok]
@@ -294,7 +335,7 @@ class SmtpConnectionSpec
     "Ensure a Reset succeeds on an incoming message actor" in {
 
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("RSET")
       receiveOne(10.seconds) mustBe a[Ok]
@@ -309,7 +350,7 @@ class SmtpConnectionSpec
     "Ensure a Helo resets on an incoming message actor" in {
 
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("HELO source.domain")
       receiveOne(10.seconds) mustBe a[Ok]
@@ -324,7 +365,7 @@ class SmtpConnectionSpec
     "Ensure a Ehlo resets on an incoming message actor" in {
 
       val smtpConnection =
-        system.actorOf(Props(classOf[IncomingMessageActor], this))
+        system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage("EHLO source.domain")
       receiveOne(10.seconds) mustBe a[Ok]
@@ -334,6 +375,61 @@ class SmtpConnectionSpec
         receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
 
       actorState.state mustBe Greeted
+    }
+
+    "Ensure the file gets saved when an incoming message ends" in {
+      val recipient = UUID.randomUUID().toString
+      class FileDropActor(configuration: Configuration)
+          extends SmtpConnection(configuration) {
+        startWith(
+          DataChannel,
+          DataChannel(new InetSocketAddress("1.2.3.4", 25),
+                      "test",
+                      None,
+                      List(s"${recipient}@shadowmute.com"),
+                      Vector.empty)
+        )
+      }
+
+      val dropPath = Files.createTempDirectory(
+        "smtst_390_"
+      )
+      dropPath.toFile.deleteOnExit()
+
+      class StaticConfiguration extends Configuration {
+        override val mailDropPath = dropPath.toString
+      }
+      val localConfig = new StaticConfiguration()
+
+      val smtpConnection =
+        system.actorOf(Props(new FileDropActor(localConfig)))
+
+      val random = UUID.randomUUID()
+      smtpConnection ! SmtpConnection.IncomingMessage(random.toString)
+
+      implicit val timeout: Timeout = 5.seconds
+      val f = smtpConnection ? SmtpConnection.IncomingMessage(".")
+      Await.result(f, 1.second)
+
+      // Ensure the UUID is in the new file
+      import scala.collection.JavaConversions._
+
+      val recipientTarget = dropPath.resolve(recipient)
+      recipientTarget.toFile().deleteOnExit()
+
+      Files.exists(recipientTarget) mustBe true
+
+      val recipientContents = Files.newDirectoryStream(recipientTarget).toList
+
+      recipientContents.length mustBe 1
+
+      val droppedFile = recipientTarget.resolve(recipientContents.head)
+      val src =
+        Source.fromFile(droppedFile.toString).getLines.mkString("")
+
+      src.contains(random.toString) mustBe true
+
+      droppedFile.toFile().deleteOnExit()
     }
   }
 }

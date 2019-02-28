@@ -11,18 +11,23 @@ import akka.actor.{ActorSystem, Props}
 
 import scala.concurrent.duration._
 
+import configuration.RuntimeConfiguration
+
 class SmtpHandler(system: ActorSystem) {
 
   implicit val sys = system
 
   val maxumumMessageSize = 1000
 
+  val configuration = new RuntimeConfiguration()
+
   def handle(c: IncomingConnection)(implicit m: Materializer) = {
 
-    val welcomeMessage = Source.single(SmtpConnection.SendBanner)
+    val welcomeMessage =
+      Source.single(SmtpConnection.SendBanner(c.remoteAddress))
 
     val connectionProcessor = system.actorOf(
-      Props(new SmtpConnection())
+      Props(new SmtpConnection(configuration))
     )
 
     import akka.pattern.ask

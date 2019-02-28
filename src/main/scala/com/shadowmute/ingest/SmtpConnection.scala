@@ -2,31 +2,45 @@ package com.shadowmute.ingest
 
 import akka.actor.{Actor, ActorRef, FSM, Props}
 
+import java.net.InetSocketAddress
+
+import configuration.Configuration
+
 sealed trait State
 
 case object Init extends State
+case object Connected extends State
 case object Greeted extends State
 case object IncomingMessage extends State
 case object DataChannel extends State
 
 sealed trait Data
 case object Uninitialized extends Data
-case class InitialSession(sourceDomain: String) extends Data
-case class MailSession(sourceDomain: String,
-                       reversePath: Option[String],
-                       recipients: List[String])
-    extends Data {
+case class Connection(relayAddress: InetSocketAddress) extends Data
+case class InitialSession(relayAddress: InetSocketAddress, sourceDomain: String)
+    extends Data
+case class MailSession(
+    relayAddress: InetSocketAddress,
+    sourceDomain: String,
+    reversePath: Option[String],
+    recipients: List[String]
+) extends Data {
   def withRecipient(recipient: String) = {
     val newRecipients = recipient :: recipients
-    MailSession(sourceDomain, reversePath, newRecipients)
+    MailSession(relayAddress, sourceDomain, reversePath, newRecipients)
   }
 
   def openDataChannel() = {
-    DataChannel(sourceDomain, reversePath, recipients, Vector.empty)
+    DataChannel(relayAddress,
+                sourceDomain,
+                reversePath,
+                recipients,
+                Vector.empty)
   }
 }
 
 case class DataChannel(
+    relayAddress: InetSocketAddress,
     sourceDomain: String,
     reversePath: Option[String],
     recipients: List[String],
@@ -51,7 +65,9 @@ case class DataChannel(
   }
 }
 
-class SmtpConnection extends Actor with FSM[State, Data] {
+class SmtpConnection(configuration: Configuration)
+    extends Actor
+    with FSM[State, Data] {
 
   startWith(Init, Uninitialized)
 
@@ -80,12 +96,20 @@ class SmtpConnection extends Actor with FSM[State, Data] {
   }
 
   when(Init) {
-    case Event(SmtpConnection.SendBanner, Uninitialized) => {
+    case Event(SmtpConnection.SendBanner(remoteAddress), Uninitialized) => {
       Logger().debug("[*] Init")
       sender() ! "220 shadowmute.com"
+      goto(Connected) using Connection(remoteAddress)
+    }
+    case _ => {
+      sender() ! CommandOutOfSequence()
       stay()
     }
-    case Event(incoming: SmtpConnection.IncomingMessage, Uninitialized) => {
+  }
+
+  when(Connected) {
+    case Event(incoming: SmtpConnection.IncomingMessage,
+               connection: Connection) => {
       // Logger().debug(s"[*] Incoming ${incoming}")
       CommandParser
         .parse(incoming)
@@ -98,10 +122,13 @@ class SmtpConnection extends Actor with FSM[State, Data] {
               case helo: Helo => {
                 Logger().debug(s"[*] HELO from ${helo.domain}")
                 sender() ! Ok("shadowmute.com")
-                goto(Greeted) using InitialSession(helo.domain)
+                goto(Greeted) using InitialSession(
+                  connection.relayAddress,
+                  helo.domain
+                )
               }
               case ehlo: Ehlo => {
-                replyToEhlo(sender(), ehlo.domain)
+                replyToEhlo(sender(), connection.relayAddress, ehlo.domain)
               }
               case _: Rset => {
                 sender() ! Ok("Buffers reset")
@@ -133,13 +160,18 @@ class SmtpConnection extends Actor with FSM[State, Data] {
                 stay()
               }
               case _: Ehlo => {
-                replyToEhlo(sender(), session.sourceDomain)
+                replyToEhlo(sender(),
+                            session.relayAddress,
+                            session.sourceDomain)
               }
               case mail: Mail => {
                 sender() ! Ok("Ok")
-                goto(IncomingMessage) using MailSession(session.sourceDomain,
-                                                        mail.reversePath,
-                                                        Nil)
+                goto(IncomingMessage) using MailSession(
+                  session.relayAddress,
+                  session.sourceDomain,
+                  mail.reversePath,
+                  Nil
+                )
               }
               case _: Rset => {
                 sender() ! Ok("Buffers reset")
@@ -159,11 +191,13 @@ class SmtpConnection extends Actor with FSM[State, Data] {
     }
   }
 
-  def replyToEhlo(sender: ActorRef, sourceDomain: String) = {
+  def replyToEhlo(sender: ActorRef,
+                  relayAddress: InetSocketAddress,
+                  sourceDomain: String) = {
 
     Logger().debug(s"[*] EHLO from ${sourceDomain}")
     sender ! Ok(List("shadowmute.com", "8BITMIME", "SMTPUTF8"))
-    goto(Greeted) using InitialSession(sourceDomain)
+    goto(Greeted) using InitialSession(relayAddress, sourceDomain)
   }
 
   when(IncomingMessage) {
@@ -202,14 +236,22 @@ class SmtpConnection extends Actor with FSM[State, Data] {
               }
               case _: Rset => {
                 sender() ! Ok("Buffers reset")
-                goto(Greeted) using InitialSession(session.sourceDomain)
+                goto(Greeted) using InitialSession(
+                  session.relayAddress,
+                  session.sourceDomain
+                )
               }
               case _: Helo => {
                 sender() ! Ok("Buffers reset")
-                goto(Greeted) using InitialSession(session.sourceDomain)
+                goto(Greeted) using InitialSession(
+                  session.relayAddress,
+                  session.sourceDomain
+                )
               }
               case _: Ehlo => {
-                replyToEhlo(sender(), session.sourceDomain)
+                replyToEhlo(sender(),
+                            session.relayAddress,
+                            session.sourceDomain)
               }
               case unmatched: Verb => {
                 sender() ! commonCommands(unmatched)
@@ -226,6 +268,19 @@ class SmtpConnection extends Actor with FSM[State, Data] {
     }
   }
 
+  def convertDataChannelToMessages(session: DataChannel) = {
+    session.recipients.map(recipient => {
+      MailMessage(
+        recipient,
+        session.buffer,
+        session.reversePath,
+        session.sourceDomain,
+        session.relayAddress.toString
+      )
+    })
+
+  }
+
   when(DataChannel) {
     case Event(incoming: SmtpConnection.IncomingMessage,
                session: DataChannel) => {
@@ -234,11 +289,17 @@ class SmtpConnection extends Actor with FSM[State, Data] {
       dataLine match {
         case "." => {
           Logger().debug(session.toString())
-          // FEATURE: #25
-          // TODO: actually store the message
+
+          val messages = convertDataChannelToMessages(session)
+          val dropper = new MailDrop(configuration)
+          messages.foreach(message => dropper.dropMessage(message))
+
           sender() ! Ok("Message received")
 
-          goto(Greeted) using (InitialSession(session.sourceDomain))
+          goto(Greeted) using (InitialSession(
+            session.relayAddress,
+            session.sourceDomain
+          ))
         }
         case dotStarted: String if dotStarted.startsWith(".") => {
           sender() ! ReadNext()
@@ -254,7 +315,7 @@ class SmtpConnection extends Actor with FSM[State, Data] {
 }
 
 object SmtpConnection {
-  case object SendBanner
+  case class SendBanner(remoteAddress: InetSocketAddress)
 
   case class IncomingMessage(message: String)
 
