@@ -277,8 +277,6 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       val parseResult = parsed.right.value
 
       parseResult mustBe a[Rset]
-
-      val rset: Rset = parseResult.asInstanceOf[Rset]
     }
   }
 }

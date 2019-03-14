@@ -182,8 +182,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       for (i <- 1 to 100) {
-        (smtpConnection ! SmtpConnection.IncomingMessage(
-          s"RCPT TO:<new@receipt.${i}>"))
+        smtpConnection ! SmtpConnection.IncomingMessage(
+          s"RCPT TO:<new@receipt.$i>")
       }
       // Discard the 100 responses
       receiveN(100)
@@ -386,7 +386,7 @@ class SmtpConnectionSpec
           DataChannel(new InetSocketAddress("1.2.3.4", 25),
                       "test",
                       None,
-                      List(s"${recipient}@shadowmute.com"),
+                      List(s"$recipient@shadowmute.com"),
                       Vector.empty)
         )
       }
@@ -397,7 +397,9 @@ class SmtpConnectionSpec
       dropPath.toFile.deleteOnExit()
 
       class StaticConfiguration extends Configuration {
-        override val mailDropPath = dropPath.toString
+        override val mailDropPath: String = dropPath.toString
+
+        override def mailboxObservationInterval: Int = 1
       }
       val localConfig = new StaticConfiguration()
 
@@ -412,14 +414,15 @@ class SmtpConnectionSpec
       Await.result(f, 1.second)
 
       // Ensure the UUID is in the new file
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
       val recipientTarget = dropPath.resolve(recipient)
-      recipientTarget.toFile().deleteOnExit()
+      recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe true
 
-      val recipientContents = Files.newDirectoryStream(recipientTarget).toList
+      val recipientContents =
+        Files.newDirectoryStream(recipientTarget).asScala.toList
 
       recipientContents.length mustBe 1
 
@@ -429,7 +432,7 @@ class SmtpConnectionSpec
 
       src.contains(random.toString) mustBe true
 
-      droppedFile.toFile().deleteOnExit()
+      droppedFile.toFile.deleteOnExit()
     }
   }
 }

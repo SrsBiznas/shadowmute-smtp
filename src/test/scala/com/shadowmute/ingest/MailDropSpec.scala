@@ -22,7 +22,7 @@ class MailDropSpec extends WordSpec with MustMatchers {
       val relayIP = new InetSocketAddress("21.22.23.24", 25)
 
       val newMessage = MailMessage(
-        recipient = s"${uuid}@shadowmute.com",
+        recipient = s"$uuid@shadowmute.com",
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
@@ -35,7 +35,9 @@ class MailDropSpec extends WordSpec with MustMatchers {
       dropPath.toFile.deleteOnExit()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath = dropPath.toString
+        override val mailDropPath: String = dropPath.toString
+
+        override def mailboxObservationInterval: Int = 1
       }
 
       val staticConfig = new StaticConfig()
@@ -44,14 +46,15 @@ class MailDropSpec extends WordSpec with MustMatchers {
 
       dropper.dropMessage(newMessage)
 
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
       val recipientTarget = dropPath.resolve(uuid.toString)
-      recipientTarget.toFile().deleteOnExit()
+      recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe true
 
-      val recipientContents = Files.newDirectoryStream(recipientTarget).toList
+      val recipientContents =
+        Files.newDirectoryStream(recipientTarget).asScala.toList
 
       recipientContents.length mustBe 1
 
@@ -61,7 +64,7 @@ class MailDropSpec extends WordSpec with MustMatchers {
 
       src.contains(uuid.toString) mustBe true
 
-      droppedFile.toFile().deleteOnExit()
+      droppedFile.toFile.deleteOnExit()
     }
 
     "Ensure a message to the user folder can't traverse paths to non-existing dir" in {
@@ -71,7 +74,7 @@ class MailDropSpec extends WordSpec with MustMatchers {
 
       val newMessage = MailMessage(
         recipient =
-          s"${uuid}${File.separator}..${File.separator}canary@shadowmute.com",
+          s"$uuid${File.separator}..${File.separator}canary@shadowmute.com",
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
@@ -84,7 +87,9 @@ class MailDropSpec extends WordSpec with MustMatchers {
       dropPath.toFile.deleteOnExit()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath = dropPath.toString
+        override val mailDropPath: String = dropPath.toString
+
+        override def mailboxObservationInterval: Int = 1
       }
 
       val staticConfig = new StaticConfig()
@@ -94,7 +99,7 @@ class MailDropSpec extends WordSpec with MustMatchers {
       dropper.dropMessage(newMessage)
 
       val recipientTarget = dropPath.resolve("canary")
-      recipientTarget.toFile().deleteOnExit()
+      recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe false
     }
@@ -106,7 +111,7 @@ class MailDropSpec extends WordSpec with MustMatchers {
 
       val newMessage = MailMessage(
         recipient =
-          s"${uuid}${File.separator}..${File.separator}canary@shadowmute.com",
+          s"$uuid${File.separator}..${File.separator}canary@shadowmute.com",
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
@@ -123,7 +128,9 @@ class MailDropSpec extends WordSpec with MustMatchers {
       canaryPath.toFile.mkdirs()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath = dropPath.toString
+        override val mailDropPath: String = dropPath.toString
+
+        override def mailboxObservationInterval: Int = 1
       }
 
       val staticConfig = new StaticConfig()

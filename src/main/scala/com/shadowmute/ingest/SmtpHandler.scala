@@ -1,27 +1,20 @@
 package com.shadowmute.ingest
 
-import akka.stream.scaladsl.Tcp.IncomingConnection
-
-import akka.stream._
-import akka.stream.scaladsl._
-
-import akka.util.{ByteString, Timeout}
-
+import akka.NotUsed
 import akka.actor.{ActorSystem, Props}
+import akka.stream._
+import akka.stream.scaladsl.Tcp.IncomingConnection
+import akka.stream.scaladsl._
+import akka.util.{ByteString, Timeout}
+import com.shadowmute.ingest.configuration.Configuration
 
 import scala.concurrent.duration._
 
-import configuration.RuntimeConfiguration
-
-class SmtpHandler(system: ActorSystem) {
-
-  implicit val sys = system
+class SmtpHandler(val system: ActorSystem, configuration: Configuration) {
 
   val maxumumMessageSize = 1000
 
-  val configuration = new RuntimeConfiguration()
-
-  def handle(c: IncomingConnection)(implicit m: Materializer) = {
+  def handle(c: IncomingConnection)(implicit m: Materializer): NotUsed = {
 
     val welcomeMessage =
       Source.single(SmtpConnection.SendBanner(c.remoteAddress))
@@ -41,7 +34,7 @@ class SmtpHandler(system: ActorSystem) {
       .map(_.utf8String)
 
       // Portion of the handler where it drops into genuine SMTP verb decoding
-      .map(SmtpConnection.IncomingMessage(_))
+      .map(SmtpConnection.IncomingMessage)
 
       // Trigger the banner
       .merge(welcomeMessage)
