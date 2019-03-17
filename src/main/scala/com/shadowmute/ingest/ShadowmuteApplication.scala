@@ -11,10 +11,11 @@ object ShadowmuteApplication extends App {
   val system: ActorSystem = ActorSystem("shadowmute-master")
 
   val configuration = new RuntimeConfiguration()
-  val streamServer = new StreamTcpServer(system, configuration)
 
   val mailboxRegistry =
     system.actorOf(Props[MailboxRegistry], name = "MailboxRegistry")
+
+  val streamServer = new StreamTcpServer(system, configuration, mailboxRegistry)
 
   val mailboxObserver =
     system.actorOf(Props(classOf[UpstreamMailboxObserver], mailboxRegistry))

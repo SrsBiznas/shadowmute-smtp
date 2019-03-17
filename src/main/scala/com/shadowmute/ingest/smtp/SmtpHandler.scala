@@ -1,7 +1,7 @@
-package com.shadowmute.ingest
+package com.shadowmute.ingest.smtp
 
 import akka.NotUsed
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream._
 import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl._
@@ -10,7 +10,9 @@ import com.shadowmute.ingest.configuration.Configuration
 
 import scala.concurrent.duration._
 
-class SmtpHandler(val system: ActorSystem, configuration: Configuration) {
+class SmtpHandler(val system: ActorSystem,
+                  configuration: Configuration,
+                  mailboxRegistry: ActorRef) {
 
   val maxumumMessageSize = 1000
 
@@ -20,7 +22,7 @@ class SmtpHandler(val system: ActorSystem, configuration: Configuration) {
       Source.single(SmtpConnection.SendBanner(c.remoteAddress))
 
     val connectionProcessor = system.actorOf(
-      Props(new SmtpConnection(configuration))
+      Props(new SmtpConnection(configuration, mailboxRegistry))
     )
 
     import akka.pattern.ask

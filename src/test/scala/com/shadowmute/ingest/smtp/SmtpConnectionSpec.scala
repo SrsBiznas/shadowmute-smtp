@@ -1,23 +1,27 @@
-package com.shadowmute.ingest
-
-import akka.actor.{ActorSystem, Props}
-import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack}
-import akka.pattern.ask
-import akka.testkit.{ImplicitSender, TestKit}
-import akka.util.Timeout
-
-import org.scalatest._
+package com.shadowmute.ingest.smtp
 
 import java.net.InetSocketAddress
-
-import java.util.UUID
 import java.nio.file.Files
+import java.util.UUID
+
+import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack}
+import akka.actor.{ActorSystem, Props}
+import akka.pattern.ask
+import akka.testkit.TestActors.BlackholeActor
+import akka.testkit.{ImplicitSender, TestKit}
+import akka.util.Timeout
+import com.shadowmute.ingest.Logger
+import com.shadowmute.ingest.configuration.{
+  Configuration,
+  MailDropConfiguration,
+  RuntimeConfiguration
+}
+import com.shadowmute.ingest.mailbox.UnwrappedEchoActor
+import org.scalatest._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.Source
-
-import configuration.{Configuration, RuntimeConfiguration}
 
 class SmtpConnectionSpec
     extends TestKit(ActorSystem("SmtpConnectionSpec"))
@@ -26,8 +30,10 @@ class SmtpConnectionSpec
     with MustMatchers {
   "SMTP Connection" must {
 
+    val blackholeRegistry = system.actorOf(Props[BlackholeActor])
+
     class ConnectedActor(configuration: Configuration)
-        extends SmtpConnection(configuration) {
+        extends SmtpConnection(configuration, blackholeRegistry) {
       startWith(
         Connected,
         Connection(new InetSocketAddress("1.2.3.4", 25))
@@ -35,7 +41,7 @@ class SmtpConnectionSpec
     }
 
     class GreetedActor(configuration: Configuration)
-        extends SmtpConnection(configuration) {
+        extends SmtpConnection(configuration, blackholeRegistry) {
       startWith(
         Greeted,
         InitialSession(new InetSocketAddress("1.2.3.4", 25), "test")
@@ -43,7 +49,7 @@ class SmtpConnectionSpec
     }
 
     class IncomingMessageActor(configuration: Configuration)
-        extends SmtpConnection(configuration) {
+        extends SmtpConnection(configuration, blackholeRegistry) {
       startWith(
         IncomingMessage,
         MailSession(new InetSocketAddress("1.2.3.4", 25), "test", None, List())
@@ -54,7 +60,8 @@ class SmtpConnectionSpec
 
     "send a banner when in an initial state" in {
       val smtpConnection =
-        system.actorOf(Props(new SmtpConnection(basicConfiguration)))
+        system.actorOf(
+          Props(new SmtpConnection(basicConfiguration, blackholeRegistry)))
 
       smtpConnection ! SmtpConnection.SendBanner(
         new InetSocketAddress("1.2.3.4", 25))
@@ -262,7 +269,8 @@ class SmtpConnectionSpec
 
     "Respond with command out of order Data command is received in Initial state" in {
       val smtpConnection =
-        system.actorOf(Props(new SmtpConnection(basicConfiguration)))
+        system.actorOf(
+          Props(new SmtpConnection(basicConfiguration, blackholeRegistry)))
       smtpConnection ! SmtpConnection.IncomingMessage("Data")
 
       receiveOne(10.seconds).toString must startWith("503 ")
@@ -379,8 +387,11 @@ class SmtpConnectionSpec
 
     "Ensure the file gets saved when an incoming message ends" in {
       val recipient = UUID.randomUUID().toString
+
+      val uea = system.actorOf(Props(new UnwrappedEchoActor()))
+
       class FileDropActor(configuration: Configuration)
-          extends SmtpConnection(configuration) {
+          extends SmtpConnection(configuration, uea) {
         startWith(
           DataChannel,
           DataChannel(new InetSocketAddress("1.2.3.4", 25),
@@ -391,15 +402,24 @@ class SmtpConnectionSpec
         )
       }
 
-      val dropPath = Files.createTempDirectory(
+      val dropPathTarget = Files.createTempDirectory(
         "smtst_390_"
       )
-      dropPath.toFile.deleteOnExit()
+      dropPathTarget.toFile.deleteOnExit()
 
       class StaticConfiguration extends Configuration {
-        override val mailDropPath: String = dropPath.toString
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+          }
 
         override def mailboxObservationInterval: Int = 1
+
+        override def validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
       }
       val localConfig = new StaticConfiguration()
 
@@ -413,12 +433,17 @@ class SmtpConnectionSpec
       val f = smtpConnection ? SmtpConnection.IncomingMessage(".")
       Await.result(f, 1.second)
 
+      // Wait for asynchronous file drops to complete
+      Thread.sleep(500)
+
       // Ensure the UUID is in the new file
       import scala.collection.JavaConverters._
 
-      val recipientTarget = dropPath.resolve(recipient)
+      val recipientTarget = dropPathTarget.resolve(recipient)
       recipientTarget.toFile.deleteOnExit()
 
+      Logger().debug(
+        s"Looking for recipient target: ${recipientTarget.toString}")
       Files.exists(recipientTarget) mustBe true
 
       val recipientContents =

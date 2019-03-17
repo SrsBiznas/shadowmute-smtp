@@ -1,4 +1,4 @@
-package com.shadowmute.ingest
+package com.shadowmute.ingest.smtp
 
 class Response()
 

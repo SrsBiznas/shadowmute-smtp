@@ -1,13 +1,16 @@
 package com.shadowmute.ingest
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream._
 import akka.stream.scaladsl._
 import com.shadowmute.ingest.configuration.Configuration
+import com.shadowmute.ingest.smtp.SmtpHandler
 
 import scala.concurrent.Future
 
-class StreamTcpServer(system: ActorSystem, configuration: Configuration) {
+class StreamTcpServer(system: ActorSystem,
+                      configuration: Configuration,
+                      mailboxRegistry: ActorRef) {
 
   import Tcp._
   implicit val sys: ActorSystem = system
@@ -19,7 +22,7 @@ class StreamTcpServer(system: ActorSystem, configuration: Configuration) {
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
     Tcp().bind(host, port)
 
-  val smtpHandler = new SmtpHandler(system, configuration)
+  val smtpHandler = new SmtpHandler(system, configuration, mailboxRegistry)
 
   connections runForeach { connection ⇒
     Logger().debug(s"[*] New connection from: ${connection.remoteAddress}")

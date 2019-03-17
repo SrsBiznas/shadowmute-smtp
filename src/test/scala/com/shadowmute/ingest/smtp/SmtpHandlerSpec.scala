@@ -1,15 +1,13 @@
-package com.shadowmute.ingest
+package com.shadowmute.ingest.smtp
 
-import org.scalatest._
-
+import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl._
+import org.scalatest._
 
-import akka.actor.{ActorSystem}
-import akka.NotUsed
-
-import scala.concurrent.duration._
 import scala.concurrent._
+import scala.concurrent.duration._
 
 class SmtpHandlerSpec extends WordSpec with MustMatchers {
   "SmtpHandler" must {

@@ -1,4 +1,6 @@
-package com.shadowmute.ingest
+package com.shadowmute.ingest.smtp
+
+import com.shadowmute.ingest.Logger
 
 object CommandParser {
 

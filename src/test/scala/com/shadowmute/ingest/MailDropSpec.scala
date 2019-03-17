@@ -1,18 +1,26 @@
 package com.shadowmute.ingest
 
+import java.io.File
+import java.net.InetSocketAddress
+import java.nio.file.{Files, Path}
+import java.util.{Comparator, UUID}
+
+import akka.actor.{Actor, ActorSystem, Props}
+import akka.testkit.TestActors.BlackholeActor
+import akka.testkit.TestKit
+import com.shadowmute.ingest.configuration.{Configuration, MailDropConfiguration}
+import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, UnwrappedEchoActor}
 import org.scalatest._
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.io.Source
 
-import java.util.UUID
-import java.net.InetSocketAddress
+class MailDropSpec
+    extends TestKit(ActorSystem("MailDropSpec"))
+    with WordSpecLike
+    with MustMatchers {
 
-import java.io.File
-import java.nio.file.Files
-
-import configuration.Configuration
-
-class MailDropSpec extends WordSpec with MustMatchers {
   "Mail Drop" must {
 
     "Write a message to the user folder" in {
@@ -29,26 +37,41 @@ class MailDropSpec extends WordSpec with MustMatchers {
         relayIP = relayIP.toString
       )
 
-      val dropPath = Files.createTempDirectory(
+      val dropPathTarget = Files.createTempDirectory(
         "smtst_32_"
       )
-      dropPath.toFile.deleteOnExit()
+      dropPathTarget.toFile.deleteOnExit()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath: String = dropPath.toString
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+          }
 
         override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
       }
 
       val staticConfig = new StaticConfig()
 
-      val dropper = new MailDrop(staticConfig)
+      val dropper =
+        new MailDrop(staticConfig,
+                     system.actorOf(Props(new UnwrappedEchoActor())))
 
-      dropper.dropMessage(newMessage)
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
 
       import scala.collection.JavaConverters._
 
-      val recipientTarget = dropPath.resolve(uuid.toString)
+      val recipientTarget = dropPathTarget.resolve(uuid.toString)
+
       recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe true
@@ -81,24 +104,36 @@ class MailDropSpec extends WordSpec with MustMatchers {
         relayIP = relayIP.toString
       )
 
-      val dropPath = Files.createTempDirectory(
-        "smtst_80_"
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_108_"
       )
-      dropPath.toFile.deleteOnExit()
+      dropPathTarget.toFile.deleteOnExit()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath: String = dropPath.toString
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
 
+            override def discardDirectory: String = "discard"
+          }
         override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
       }
 
       val staticConfig = new StaticConfig()
 
-      val dropper = new MailDrop(staticConfig)
+      val dropper =
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
 
-      dropper.dropMessage(newMessage)
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
 
-      val recipientTarget = dropPath.resolve("canary")
+      val recipientTarget = dropPathTarget.resolve("canary")
       recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe false
@@ -120,31 +155,255 @@ class MailDropSpec extends WordSpec with MustMatchers {
 
       val canary = "existing_canary"
 
-      val dropPath = Files.createTempDirectory(
-        "smtst_119_"
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_159_"
       )
 
-      val canaryPath = dropPath.resolve(canary)
+      val canaryPath = dropPathTarget.resolve(canary)
       canaryPath.toFile.mkdirs()
 
       class StaticConfig extends Configuration {
-        override val mailDropPath: String = dropPath.toString
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
 
+            override def discardDirectory: String = "discard"
+          }
         override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
       }
 
       val staticConfig = new StaticConfig()
 
-      val dropper = new MailDrop(staticConfig)
+      val dropper =
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
 
-      dropper.dropMessage(newMessage)
-
-      Logger().debug(s"CanaryPath: ${canaryPath.toString}")
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
 
       Files.list(canaryPath).count() mustBe 0
 
       Files.delete(canaryPath)
-      Files.delete(dropPath)
+      hardDelete(dropPathTarget)
+    }
+
+    def hardDelete(directory: Path): Unit = {
+      Files
+        .walk(directory)
+        .sorted(Comparator.reverseOrder())
+        .forEach(Files.delete(_))
+    }
+
+    "pull recipient mailbox from a valid recipient" in {
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_206_"
+      )
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+            override def discardDirectory: String = "discard"
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+      val mailDrop =
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+
+      val testRecipient = "test.recipient.179@shadowmute.com"
+      val extracted = mailDrop.extractRecipientMailbox(testRecipient)
+
+      extracted mustBe defined
+
+      extracted mustBe Some("test.recipient.179")
+
+      // Do the same thing with mixed case domain
+
+      val testRecipientMixedCase = "test.recipient.202@ShadowMute.COM"
+      val extractedMixedCase =
+        mailDrop.extractRecipientMailbox(testRecipientMixedCase)
+
+      extractedMixedCase mustBe defined
+
+      extractedMixedCase mustBe Some("test.recipient.202")
+    }
+
+    "not pull recipient mailbox from an invalid host domain" in {
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_245_"
+      )
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+            override def discardDirectory: String = "discard"
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+      val mailDrop =
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+
+      val testRecipient = "test.recipient.259@mutedshadows.com"
+      val extracted = mailDrop.extractRecipientMailbox(testRecipient)
+
+      extracted mustBe empty
+    }
+
+    "not throw an exception in a non-RFC compliant UUID" in {
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_272_"
+      )
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+            override def discardDirectory: String = "discard"
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+      val mailDrop =
+        new MailDrop(staticConfig,
+                     system.actorOf(Props(new UnwrappedEchoActor())))
+
+      val nonCompliant = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
+
+      val result = Await.result(
+        mailDrop.convertMailboxToUserKeyPath(nonCompliant),
+        100.millis
+      )
+
+      result mustBe defined
+
+      result.get.toString mustBe nonCompliant.toLowerCase()
+    }
+
+    "convert a supplied recipient mailbox into a user key directory" in {
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_306_"
+      )
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+            override def discardDirectory: String = "discard"
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val targetUserKey = UUID.randomUUID()
+
+      class SimulatedUserRegistry extends Actor {
+        override def receive: Receive = {
+          case _ => sender ! Option(targetUserKey)
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+      val mailDrop =
+        new MailDrop(staticConfig,
+                     system.actorOf(Props(new SimulatedUserRegistry())))
+
+      val incomingMailbox = UUID.randomUUID()
+
+      val result = Await.result(
+        mailDrop.convertMailboxToUserKeyPath(incomingMailbox.toString),
+        100.millis
+      )
+
+      result mustBe defined
+
+      result mustBe Some(targetUserKey)
+    }
+
+    "Ensure a message to a non-user folder ends up in the discard" in {
+      val unknownUuid = UUID.randomUUID()
+
+      val relayIP = new InetSocketAddress("69.70.71.72", 25)
+
+      val canaryUuid = UUID.randomUUID()
+
+      val newMessage = MailMessage(
+        recipient = s"$unknownUuid@shadowmute.com",
+        body = Vector("test", canaryUuid.toString),
+        reversePath = Some("reverse@drop.path"),
+        sourceDomain = "drop.path",
+        relayIP = relayIP.toString
+      )
+
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_362_"
+      )
+      dropPathTarget.toFile.deleteOnExit()
+
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+
+      val dropper =
+        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]))
+
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
+
+      val recipientTarget = dropPathTarget.resolve("discard")
+      recipientTarget.toFile.deleteOnExit()
+
+      Files.exists(recipientTarget) mustBe true
+
+      val child = Files
+        .walk(recipientTarget)
+        .sorted(Comparator.reverseOrder())
+        .findFirst()
+
+      // These are java optionals, not Option[]
+      child.isPresent mustBe true
+
+      val dropped = child.get()
+
+      val src =
+        Source.fromFile(dropped.toString).getLines.mkString("")
+
+      src.contains(canaryUuid.toString) mustBe true
     }
   }
 }
