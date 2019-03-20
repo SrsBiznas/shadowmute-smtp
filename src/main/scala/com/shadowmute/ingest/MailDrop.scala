@@ -13,7 +13,7 @@ import com.shadowmute.ingest.mailbox.RecipientQuery
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
@@ -59,7 +59,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
     }
   }
 
-  def dropMessage(message: MailMessage): Future[Unit] = {
+  def dropMessage(message: MailMessage): Future[Boolean] = {
 
     val userKeyResult: Future[String] =
       extractRecipientMailbox(message.recipient)
@@ -79,7 +79,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
     val realPath = Paths.get(configuration.mailDrop.dropPath)
 
-    userKeyResult.map(userKeyDir => {
+    userKeyResult.map[Boolean](userKeyDir => {
       val path = new File(
         s"$realPath${File.separator}$userKeyDir"
       )

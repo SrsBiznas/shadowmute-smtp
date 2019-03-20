@@ -1,6 +1,7 @@
 package com.shadowmute.ingest.smtp
 
 import java.net.InetSocketAddress
+import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import com.shadowmute.ingest.{Logger, MailDrop, MailMessage, smtp}
@@ -236,7 +237,8 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
         session.buffer,
         session.reversePath,
         session.sourceDomain,
-        session.relayAddress.toString
+        session.relayAddress.toString,
+        key = UUID.randomUUID()
       )
     })
 

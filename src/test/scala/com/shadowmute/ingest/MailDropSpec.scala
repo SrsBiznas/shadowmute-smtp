@@ -34,7 +34,8 @@ class MailDropSpec
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
-        relayIP = relayIP.toString
+        relayIP = relayIP.toString,
+        UUID.randomUUID()
       )
 
       val dropPathTarget = Files.createTempDirectory(
@@ -101,7 +102,8 @@ class MailDropSpec
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
-        relayIP = relayIP.toString
+        relayIP = relayIP.toString,
+        UUID.randomUUID()
       )
 
       val dropPathTarget = Files.createTempDirectory(
@@ -150,7 +152,8 @@ class MailDropSpec
         body = Vector("test", "body"),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
-        relayIP = relayIP.toString
+        relayIP = relayIP.toString,
+        UUID.randomUUID()
       )
 
       val canary = "existing_canary"
@@ -353,7 +356,8 @@ class MailDropSpec
         body = Vector("test", canaryUuid.toString),
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
-        relayIP = relayIP.toString
+        relayIP = relayIP.toString,
+        UUID.randomUUID()
       )
 
       val dropPathTarget = Files.createTempDirectory(

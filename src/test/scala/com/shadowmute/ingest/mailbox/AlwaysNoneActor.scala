@@ -4,6 +4,6 @@ import akka.actor.Actor
 
 class AlwaysNoneActor extends Actor {
   override def receive: Receive = {
-    case RecipientQuery(uuid) => sender ! None
+    case RecipientQuery(_) => sender ! None
   }
 }

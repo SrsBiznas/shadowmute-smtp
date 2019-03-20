@@ -1,5 +1,7 @@
 package com.shadowmute.ingest
 
+import java.util.UUID
+
 import play.api.libs.json._
 
 case class MailMessage(
@@ -7,7 +9,8 @@ case class MailMessage(
     body: Vector[String],
     reversePath: Option[String],
     sourceDomain: String,
-    relayIP: String
+    relayIP: String,
+    key: UUID
 )
 
 object MailMessage {
