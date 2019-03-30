@@ -10,6 +10,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.shadowmute.ingest.configuration.Configuration
 import com.shadowmute.ingest.mailbox.RecipientQuery
+import com.shadowmute.ingest.metrics._
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
@@ -70,11 +71,13 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
           convertMailboxToUserKeyPath
         )
         .map(
-          _.fold(
+          _.fold({
+            StatsD.statsD.increment(MessageDiscarded.name)
             configuration.mailDrop.discardDirectory
-          )(
-            _.toString
-          )
+          })( userKey => {
+            StatsD.statsD.increment(MessageRecipientRouted.name)
+            userKey.toString
+          })
         )
 
     val realPath = Paths.get(configuration.mailDrop.dropPath)
@@ -90,7 +93,12 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         val outputFile = File.createTempFile("000", ".msg", path)
 
         val bw = new BufferedWriter(new FileWriter(outputFile))
-        bw.write(Json.toJson(message).toString())
+        val outputData = Json.toJson(message).toString()
+
+        StatsD.statsD.gauge(MessageSize.name, outputData.length)
+
+        bw.write(outputData)
+
         bw.close()
         true
       } else {

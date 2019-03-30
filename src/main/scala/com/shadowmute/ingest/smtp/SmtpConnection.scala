@@ -6,6 +6,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import com.shadowmute.ingest.{Logger, MailDrop, MailMessage, smtp}
 import com.shadowmute.ingest.configuration.Configuration
+import com.shadowmute.ingest.metrics._
 
 sealed trait State
 
@@ -77,6 +78,8 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
       case _: Noop =>
         Ok("0x90")
       case _: Quit =>
+
+        StatsD.statsD.increment(ConnectionTerminatedGracefully.name)
         ClosingConnection("TTFN")
       case _: Vrfy =>
         CannotVerifyUser()
@@ -92,7 +95,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
 
   when(Init) {
     case Event(SmtpConnection.SendBanner(remoteAddress), Uninitialized) =>
-      Logger().debug("[*] Init")
+      StatsD.statsD.increment(ConnectionInitialized.name)
       sender() ! "220 shadowmute.com"
       goto(Connected) using Connection(remoteAddress)
     case _ =>
@@ -203,6 +206,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
                 stay()
               } else {
                 sender ! StartMailInput()
+                StatsD.statsD.increment(MessageInitiated.name)
                 goto(DataChannel) using session.openDataChannel()
               }
             case _: Rset =>
@@ -257,6 +261,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
           val dropper = new MailDrop(configuration, mailboxRegistry)
           messages.foreach(message => dropper.dropMessage(message))
 
+          StatsD.statsD.increment(MessageCompleted.name)
           sender() ! Ok("Message received")
 
           goto(Greeted) using InitialSession(

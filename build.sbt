@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.0",
   "org.postgresql" % "postgresql" % "42.2.5",
   "com.github.tminglei" %% "slick-pg" % "0.17.2",
+  "com.datadoghq" % "java-dogstatsd-client" % "2.7",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
 
