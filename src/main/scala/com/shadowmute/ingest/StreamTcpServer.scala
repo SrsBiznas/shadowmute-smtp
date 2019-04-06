@@ -8,9 +8,11 @@ import com.shadowmute.ingest.smtp.SmtpHandler
 
 import scala.concurrent.Future
 
-class StreamTcpServer(system: ActorSystem,
-                      configuration: Configuration,
-                      mailboxRegistry: ActorRef) {
+class StreamTcpServer(
+    system: ActorSystem,
+    configuration: Configuration,
+    mailboxRegistry: ActorRef
+) {
 
   import Tcp._
   implicit val sys: ActorSystem = system
@@ -22,7 +24,8 @@ class StreamTcpServer(system: ActorSystem,
   val connections: Source[IncomingConnection, Future[ServerBinding]] =
     Tcp().bind(host, port)
 
-  val smtpHandler = new SmtpHandler(system, configuration, mailboxRegistry)
+  val smtpHandler =
+    new SmtpHandler(system, configuration, mailboxRegistry)
 
   connections runForeach { connection ⇒
     Logger().debug(s"[*] New connection from: ${connection.remoteAddress}")

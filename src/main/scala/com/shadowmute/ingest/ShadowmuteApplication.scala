@@ -3,6 +3,8 @@ package com.shadowmute.ingest
 import akka.actor.{ActorSystem, Props}
 import com.shadowmute.ingest.configuration.RuntimeConfiguration
 import com.shadowmute.ingest.mailbox.{MailboxRegistry, UpstreamMailboxObserver}
+import io.prometheus.client.exporter.HTTPServer
+import io.prometheus.client.hotspot.DefaultExports
 
 import scala.concurrent.duration._
 
@@ -15,7 +17,11 @@ object ShadowmuteApplication extends App {
   val mailboxRegistry =
     system.actorOf(Props[MailboxRegistry], name = "MailboxRegistry")
 
-  val streamServer = new StreamTcpServer(system, configuration, mailboxRegistry)
+  val streamServer = new StreamTcpServer(
+    system,
+    configuration,
+    mailboxRegistry
+  )
 
   val mailboxObserver =
     system.actorOf(Props(classOf[UpstreamMailboxObserver], mailboxRegistry))
@@ -25,4 +31,7 @@ object ShadowmuteApplication extends App {
     mailboxObserver ! 'refresh
   }(system.dispatcher)
 
+  DefaultExports.initialize()
+
+  val server = new HTTPServer(9025)
 }

@@ -72,10 +72,10 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         )
         .map(
           _.fold({
-            StatsD.statsD.increment(MessageDiscarded.name)
+            MetricCollector.MessageDiscarded.inc()
             configuration.mailDrop.discardDirectory
-          })( userKey => {
-            StatsD.statsD.increment(MessageRecipientRouted.name)
+          })(userKey => {
+            MetricCollector.MessageRecipientRouted.inc()
             userKey.toString
           })
         )
@@ -95,7 +95,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         val bw = new BufferedWriter(new FileWriter(outputFile))
         val outputData = Json.toJson(message).toString()
 
-        StatsD.statsD.gauge(MessageSize.name, outputData.length)
+        MetricCollector.MessageSize.observe(outputData.length)
 
         bw.write(outputData)
 

@@ -4,9 +4,9 @@ import java.net.InetSocketAddress
 import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, FSM, Props}
-import com.shadowmute.ingest.{Logger, MailDrop, MailMessage, smtp}
 import com.shadowmute.ingest.configuration.Configuration
 import com.shadowmute.ingest.metrics._
+import com.shadowmute.ingest.{Logger, MailDrop, MailMessage, smtp}
 
 sealed trait State
 
@@ -67,8 +67,10 @@ case class DataChannel(
   }
 }
 
-class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
-    extends Actor
+class SmtpConnection(
+    configuration: Configuration,
+    mailboxRegistry: ActorRef
+) extends Actor
     with FSM[State, Data] {
 
   startWith(Init, Uninitialized)
@@ -78,8 +80,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
       case _: Noop =>
         Ok("0x90")
       case _: Quit =>
-
-        StatsD.statsD.increment(ConnectionTerminatedGracefully.name)
+        MetricCollector.ConnectionTerminatedGracefully.inc()
         ClosingConnection("TTFN")
       case _: Vrfy =>
         CannotVerifyUser()
@@ -95,7 +96,8 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
 
   when(Init) {
     case Event(SmtpConnection.SendBanner(remoteAddress), Uninitialized) =>
-      StatsD.statsD.increment(ConnectionInitialized.name)
+      MetricCollector.ConnectionInitialized.inc()
+
       sender() ! "220 shadowmute.com"
       goto(Connected) using Connection(remoteAddress)
     case _ =>
@@ -206,7 +208,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
                 stay()
               } else {
                 sender ! StartMailInput()
-                StatsD.statsD.increment(MessageInitiated.name)
+                MetricCollector.MessageInitiated.inc()
                 goto(DataChannel) using session.openDataChannel()
               }
             case _: Rset =>
@@ -261,7 +263,7 @@ class SmtpConnection(configuration: Configuration, mailboxRegistry: ActorRef)
           val dropper = new MailDrop(configuration, mailboxRegistry)
           messages.foreach(message => dropper.dropMessage(message))
 
-          StatsD.statsD.increment(MessageCompleted.name)
+          MetricCollector.MessageCompleted.inc()
           sender() ! Ok("Message received")
 
           goto(Greeted) using InitialSession(

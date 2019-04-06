@@ -19,7 +19,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.0",
   "org.postgresql" % "postgresql" % "42.2.5",
   "com.github.tminglei" %% "slick-pg" % "0.17.2",
-  "com.datadoghq" % "java-dogstatsd-client" % "2.7",
+  // Prometheus
+  "io.prometheus" % "simpleclient" % "0.6.0",
+  "io.prometheus" % "simpleclient_httpserver" % "0.6.0",
+  "io.prometheus" % "simpleclient_hotspot" % "0.6.0",
+  // Tests
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
 

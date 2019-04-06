@@ -1,0 +1,26 @@
+version: '3'
+services:
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../administration/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../administration/grafana/provisioning:/etc/shadowmute/provisioning
+      - ../administration/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SERVER_ROOT_URL=http://metrics.shadowmute
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+      - GF_PATHS_PROVISIONING=/etc/shadowmute/provisioning
+
+networks:
+  development:
+    driver: bridge

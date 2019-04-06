@@ -10,9 +10,11 @@ import com.shadowmute.ingest.configuration.Configuration
 
 import scala.concurrent.duration._
 
-class SmtpHandler(val system: ActorSystem,
-                  configuration: Configuration,
-                  mailboxRegistry: ActorRef) {
+class SmtpHandler(
+    val system: ActorSystem,
+    configuration: Configuration,
+    mailboxRegistry: ActorRef
+) {
 
   val maxumumMessageSize = 1000
 
