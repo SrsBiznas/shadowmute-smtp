@@ -12,4 +12,8 @@ trait MailDropConfiguration {
   def dropPath: String
 
   def discardDirectory: String
+
+  def specialMailboxDirectory: String
+
+  def specialMailboxes: Seq[String]
 }

@@ -30,6 +30,12 @@ object MetricCollector {
     .help("Total messages routed to users.")
     .register()
 
+  val SpecialMailboxRouted: Counter = Counter
+    .build()
+    .name("ingest__special_message_routed")
+    .help("Total special messages (eg. support@ or abuse@) routed.")
+    .register()
+
   val MessageDiscarded: Counter = Counter
     .build()
     .name("ingest_message_discarded")

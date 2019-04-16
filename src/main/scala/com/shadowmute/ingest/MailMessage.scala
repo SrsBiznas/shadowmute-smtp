@@ -14,5 +14,5 @@ case class MailMessage(
 )
 
 object MailMessage {
-  implicit val format = Json.format[MailMessage]
+  implicit val format: Format[MailMessage] = Json.format[MailMessage]
 }

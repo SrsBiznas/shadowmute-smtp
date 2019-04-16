@@ -14,6 +14,16 @@ class RuntimeConfiguration extends Configuration {
 
     override val discardDirectory: String =
       mailDropConfig.getString("discardDirectory")
+
+    override def specialMailboxDirectory: String =
+      mailDropConfig.getString("specialMailboxDirectory")
+
+    override def specialMailboxes: Seq[String] = {
+      mailDropConfig
+        .getStringList("specialMailboxes")
+        .asScala
+        .map(_.toLowerCase)
+    }
   }
 
   override val mailboxObservationInterval: Int =

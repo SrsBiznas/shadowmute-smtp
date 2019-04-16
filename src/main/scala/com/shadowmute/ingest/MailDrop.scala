@@ -40,7 +40,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
   def convertMailboxToUserKeyPath(
       targetMailbox: String
-  ): Future[Option[UUID]] = {
+  ): Future[Option[String]] = {
 
     val uuidMatch =
       "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}".r.anchored
@@ -54,7 +54,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         implicit val timeout: Timeout = 100.millis
         val result = mailboxRegistry ? RecipientQuery(mailboxAsUUID)
 
-        result.asInstanceOf[Future[Option[UUID]]]
+        result.asInstanceOf[Future[Option[UUID]]].map(_.map(_.toString))
       case _ =>
         Future.successful(None)
     }
@@ -62,16 +62,26 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
   def dropMessage(message: MailMessage): Future[Boolean] = {
 
+    val extractedRecipient = extractRecipientMailbox(message.recipient)
+
+    val specialMailboxes = configuration.mailDrop.specialMailboxes
+
     val userKeyResult: Future[String] =
-      extractRecipientMailbox(message.recipient)
+      extractedRecipient
         .fold(
           // This *must* be folded to push the option into the Future
-          Future.successful(None: Option[UUID])
-        )(
-          convertMailboxToUserKeyPath
-        )
+          Future.successful(None: Option[String])
+        )(address =>
+          if (specialMailboxes.contains(address)) {
+            MetricCollector.SpecialMailboxRouted.inc()
+            Future.successful(
+              Option(configuration.mailDrop.specialMailboxDirectory))
+          } else {
+            convertMailboxToUserKeyPath(address)
+        })
         .map(
           _.fold({
+
             MetricCollector.MessageDiscarded.inc()
             configuration.mailDrop.discardDirectory
           })(userKey => {

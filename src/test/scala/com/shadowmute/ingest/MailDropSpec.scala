@@ -8,7 +8,10 @@ import java.util.{Comparator, UUID}
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
-import com.shadowmute.ingest.configuration.{Configuration, MailDropConfiguration}
+import com.shadowmute.ingest.configuration.{
+  Configuration,
+  MailDropConfiguration
+}
 import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, UnwrappedEchoActor}
 import org.scalatest._
 
@@ -49,6 +52,9 @@ class MailDropSpec
             override def dropPath: String = dropPathTarget.toString
 
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
 
         override def mailboxObservationInterval: Int = 1
@@ -117,6 +123,9 @@ class MailDropSpec
             override def dropPath: String = dropPathTarget.toString
 
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -171,6 +180,9 @@ class MailDropSpec
             override def dropPath: String = dropPathTarget.toString
 
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -211,6 +223,9 @@ class MailDropSpec
           new MailDropConfiguration {
             override def dropPath: String = dropPathTarget.toString
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -250,6 +265,9 @@ class MailDropSpec
           new MailDropConfiguration {
             override def dropPath: String = dropPathTarget.toString
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -277,6 +295,9 @@ class MailDropSpec
           new MailDropConfiguration {
             override def dropPath: String = dropPathTarget.toString
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -311,6 +332,9 @@ class MailDropSpec
           new MailDropConfiguration {
             override def dropPath: String = dropPathTarget.toString
             override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -341,7 +365,7 @@ class MailDropSpec
 
       result mustBe defined
 
-      result mustBe Some(targetUserKey)
+      result mustBe Some(targetUserKey.toString)
     }
 
     "Ensure a message to a non-user folder ends up in the discard" in {
@@ -371,6 +395,10 @@ class MailDropSpec
             override def dropPath: String = dropPathTarget.toString
 
             override def discardDirectory: String = "discard"
+
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -390,6 +418,76 @@ class MailDropSpec
       )
 
       val recipientTarget = dropPathTarget.resolve("discard")
+      recipientTarget.toFile.deleteOnExit()
+
+      Files.exists(recipientTarget) mustBe true
+
+      val child = Files
+        .walk(recipientTarget)
+        .sorted(Comparator.reverseOrder())
+        .findFirst()
+
+      // These are java optionals, not Option[]
+      child.isPresent mustBe true
+
+      val dropped = child.get()
+
+      val src =
+        Source.fromFile(dropped.toString).getLines.mkString("")
+
+      src.contains(canaryUuid.toString) mustBe true
+    }
+
+    "Ensure a message to a special box ends up in the special handler drop" in {
+      val unknownUuid = UUID.randomUUID()
+
+      val relayIP = new InetSocketAddress("69.70.71.72", 25)
+
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_419_"
+      )
+      dropPathTarget.toFile.deleteOnExit()
+
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes = List("testing")
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+      }
+
+      val canaryUuid = UUID.randomUUID()
+
+      val newMessage = MailMessage(
+        recipient = "testing@shadowmute.com",
+        body = Vector("test", canaryUuid.toString),
+        reversePath = Some("reverse@drop.path"),
+        sourceDomain = "drop.path",
+        relayIP = relayIP.toString,
+        UUID.randomUUID()
+      )
+
+      val staticConfig = new StaticConfig()
+
+      val dropper =
+        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]))
+
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
+
+      val recipientTarget = dropPathTarget.resolve("special")
       recipientTarget.toFile.deleteOnExit()
 
       Files.exists(recipientTarget) mustBe true

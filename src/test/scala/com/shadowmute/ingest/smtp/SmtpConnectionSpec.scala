@@ -413,6 +413,10 @@ class SmtpConnectionSpec
             override def dropPath: String = dropPathTarget.toString
 
             override def discardDirectory: String = "discard"
+
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
           }
 
         override def mailboxObservationInterval: Int = 1
