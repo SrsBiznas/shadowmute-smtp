@@ -11,7 +11,8 @@ import scala.concurrent.Future
 class StreamTcpServer(
     system: ActorSystem,
     configuration: Configuration,
-    mailboxRegistry: ActorRef
+    mailboxRegistry: ActorRef,
+    concreteTLS: ConcreteTLS
 ) {
 
   import Tcp._
@@ -25,7 +26,7 @@ class StreamTcpServer(
     Tcp().bind(host, port)
 
   val smtpHandler =
-    new SmtpHandler(system, configuration, mailboxRegistry)
+    new SmtpHandler(system, configuration, mailboxRegistry, concreteTLS)
 
   connections runForeach { connection ⇒
     Logger().debug(s"[*] New connection from: ${connection.remoteAddress}")

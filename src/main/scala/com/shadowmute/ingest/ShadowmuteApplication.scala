@@ -17,10 +17,13 @@ object ShadowmuteApplication extends App {
   val mailboxRegistry =
     system.actorOf(Props[MailboxRegistry], name = "MailboxRegistry")
 
+  val concreteTLS = new ConcreteTLS(configuration.tls)
+
   val streamServer = new StreamTcpServer(
     system,
     configuration,
-    mailboxRegistry
+    mailboxRegistry,
+    concreteTLS
   )
 
   val mailboxObserver =

@@ -10,7 +10,8 @@ import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
 import com.shadowmute.ingest.configuration.{
   Configuration,
-  MailDropConfiguration
+  MailDropConfiguration,
+  TlsConfiguration
 }
 import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, UnwrappedEchoActor}
 import org.scalatest._
@@ -62,6 +63,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -132,6 +135,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -189,6 +194,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -232,6 +239,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -274,6 +283,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -304,6 +315,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -341,6 +354,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val targetUserKey = UUID.randomUUID()
@@ -405,6 +420,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -464,6 +481,8 @@ class MailDropSpec
         override val validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
 
       val canaryUuid = UUID.randomUUID()

@@ -14,7 +14,8 @@ import com.shadowmute.ingest.Logger
 import com.shadowmute.ingest.configuration.{
   Configuration,
   MailDropConfiguration,
-  RuntimeConfiguration
+  RuntimeConfiguration,
+  TlsConfiguration
 }
 import com.shadowmute.ingest.mailbox.UnwrappedEchoActor
 import org.scalatest._
@@ -87,11 +88,12 @@ class SmtpConnectionSpec
       val expected = receiveOne(10.seconds).toString
 
       val grouped = expected.split(SmtpHandler.NL)
-      grouped.length mustBe 3
+      grouped.length mustBe 4
 
       grouped(0) must startWith("250-")
       grouped(1) must startWith("250-")
-      grouped(2) must startWith("250 ")
+      grouped(2) must startWith("250-")
+      grouped(3) must startWith("250 ")
 
       val trimmed = grouped.map(_.drop(4))
       val asSet = trimmed.toSet
@@ -424,6 +426,8 @@ class SmtpConnectionSpec
         override def validRecipientDomains: Seq[String] = {
           List("shadowmute.com")
         }
+
+        override def tls: TlsConfiguration = ???
       }
       val localConfig = new StaticConfiguration()
 
@@ -462,6 +466,26 @@ class SmtpConnectionSpec
       src.contains(random.toString) mustBe true
 
       droppedFile.toFile.deleteOnExit()
+    }
+
+    "Ensure a Start TLS resets an actor" in {
+
+      // clear the receipt buffers
+      receiveWhile(100.millis, 100.millis, 10) {
+        case _ => Unit
+      }
+
+      val smtpConnection =
+        system.actorOf(Props(new GreetedActor(basicConfiguration)))
+
+      smtpConnection ! SmtpConnection.IncomingMessage("STARTTLS")
+      receiveOne(10.seconds) mustBe a[TLSReady]
+
+      smtpConnection ! SubscribeTransitionCallBack(testActor)
+      val actorState =
+        receiveOne(10.seconds).asInstanceOf[CurrentState[State]]
+
+      actorState.state mustBe Connected
     }
   }
 }

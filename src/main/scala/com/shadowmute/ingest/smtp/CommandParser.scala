@@ -89,6 +89,8 @@ object CommandParser {
       Right(OpenDataChannel())
     } else if (verb == "rset") {
       Right(Rset())
+    } else if (verb == "starttls") {
+      Right(StartTLS())
     } else {
       Logger().debug(s"[-] not helo {$verb}")
       Left(CommandNotRecognized())

@@ -20,3 +20,5 @@ case class Rcpt(recipient: String, parameters: Option[String]) extends Verb
 case class OpenDataChannel() extends Verb
 
 case class Rset() extends Verb
+
+case class StartTLS() extends Verb

@@ -53,4 +53,10 @@ object MetricCollector {
     .name("ingest_connection_term_quit")
     .help("Total connections terminated gracefully.")
     .register()
+
+  val StartTLSInitiated: Counter = Counter
+    .build()
+    .name("starttls_init")
+    .help("StartTLS initiated")
+    .register()
 }

@@ -6,6 +6,8 @@ trait Configuration {
   def validRecipientDomains: Seq[String]
 
   def mailboxObservationInterval: Int
+
+  def tls: TlsConfiguration
 }
 
 trait MailDropConfiguration {
@@ -16,4 +18,9 @@ trait MailDropConfiguration {
   def specialMailboxDirectory: String
 
   def specialMailboxes: Seq[String]
+}
+
+trait TlsConfiguration {
+  def keystorePassphrase: String
+  def keystorePath: String
 }

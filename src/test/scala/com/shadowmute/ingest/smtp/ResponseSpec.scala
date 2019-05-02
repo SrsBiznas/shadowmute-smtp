@@ -46,5 +46,11 @@ class ResponseSpec extends WordSpec with MustMatchers {
       actual.toString must startWith("452 ")
     }
 
+    "Start with the correct response code in TLSReady" in {
+      val actual = TLSReady()
+
+      actual.toString must startWith("220 ")
+    }
+
   }
 }

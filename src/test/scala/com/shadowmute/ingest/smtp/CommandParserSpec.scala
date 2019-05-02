@@ -278,5 +278,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       parseResult mustBe a[Rset]
     }
+
+    "parse a STARTTLS command" in {
+      val incoming = SmtpConnection.IncomingMessage("STARTTLS")
+      val parsed = CommandParser.parse(incoming)
+
+      val parseResult = parsed.right.value
+
+      parseResult mustBe a[StartTLS]
+    }
   }
 }

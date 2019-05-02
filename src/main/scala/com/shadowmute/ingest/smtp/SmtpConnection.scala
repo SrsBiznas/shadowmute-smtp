@@ -98,7 +98,7 @@ class SmtpConnection(
     case Event(SmtpConnection.SendBanner(remoteAddress), Uninitialized) =>
       MetricCollector.ConnectionInitialized.inc()
 
-      sender() ! "220 shadowmute.com"
+      sender() ! WelcomeMessage()
       goto(Connected) using Connection(remoteAddress)
     case _ =>
       sender() ! CommandOutOfSequence()
@@ -127,6 +127,9 @@ class SmtpConnection(
               replyToEhlo(sender(), connection.relayAddress, ehlo.domain)
             case _: Rset =>
               sender() ! Ok("Buffers reset")
+              stay()
+            case _: StartTLS =>
+              sender() ! TLSReady()
               stay()
             case unmatched: Verb =>
               sender() ! commonCommands(unmatched)
@@ -161,6 +164,9 @@ class SmtpConnection(
             case _: Rset =>
               sender() ! Ok("Buffers reset")
               stay()
+            case _: StartTLS =>
+              sender() ! TLSReady()
+              goto(Connected) using Connection(session.relayAddress)
             case unmatched: Verb =>
               sender() ! commonCommands(unmatched)
               stay()
@@ -176,7 +182,7 @@ class SmtpConnection(
                   sourceDomain: String): FSM.State[smtp.State, Data] = {
 
     Logger().debug(s"[*] EHLO from $sourceDomain")
-    sender ! Ok(List("shadowmute.com", "8BITMIME", "SMTPUTF8"))
+    sender ! Ok(List("shadowmute.com", "8BITMIME", "SMTPUTF8", "STARTTLS"))
     goto(Greeted) using InitialSession(relayAddress, sourceDomain)
   }
 
