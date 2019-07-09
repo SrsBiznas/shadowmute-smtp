@@ -11,12 +11,7 @@ import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.shadowmute.ingest.Logger
-import com.shadowmute.ingest.configuration.{
-  Configuration,
-  MailDropConfiguration,
-  RuntimeConfiguration,
-  TlsConfiguration
-}
+import com.shadowmute.ingest.configuration._
 import com.shadowmute.ingest.mailbox.UnwrappedEchoActor
 import org.scalatest._
 
@@ -428,6 +423,10 @@ class SmtpConnectionSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = new FilterConfiguration {
+          override def personalProviders: Seq[String] = Nil
+        }
       }
       val localConfig = new StaticConfiguration()
 

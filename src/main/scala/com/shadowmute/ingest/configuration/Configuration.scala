@@ -8,6 +8,8 @@ trait Configuration {
   def mailboxObservationInterval: Int
 
   def tls: TlsConfiguration
+
+  def filters: FilterConfiguration
 }
 
 trait MailDropConfiguration {
@@ -23,4 +25,8 @@ trait MailDropConfiguration {
 trait TlsConfiguration {
   def keystorePassphrase: String
   def keystorePath: String
+}
+
+trait FilterConfiguration {
+  def personalProviders: Seq[String]
 }

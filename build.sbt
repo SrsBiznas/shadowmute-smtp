@@ -14,6 +14,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "com.typesafe.play" %% "play-json" % "2.6.10",
+  "javax.mail" % "javax.mail-api" % "1.6.2" exclude ("javax.activation", "activation"),
+  "com.sun.mail" % "javax.mail" % "1.6.2",
   // Database layer
   "com.typesafe.slick" %% "slick" % "3.3.0",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.0",
@@ -34,6 +36,7 @@ unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
 // This is important to prevent tests from hitting the dev DB
 javaOptions in Test += s"-Dconfig.file=${sourceDirectory.value}/test/resources/testing.conf"
+javaOptions in Test += "-Duser.timezone=UTC"
 fork in Test := true
 
 scalacOptions ++= Seq("-Ywarn-unused",

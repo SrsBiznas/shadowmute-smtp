@@ -43,4 +43,15 @@ class RuntimeConfiguration extends Configuration {
 
     override def keystorePath: String = tlsConfig.getString("keystorePath")
   }
+
+  override def filters: FilterConfiguration = new FilterConfiguration {
+    val filterConfig: Config = source.getConfig("filters")
+    override def personalProviders: Seq[String] =
+      filterConfig
+        .getStringList(
+          "personalProviders"
+        )
+        .asScala
+        .map(_.toLowerCase)
+  }
 }

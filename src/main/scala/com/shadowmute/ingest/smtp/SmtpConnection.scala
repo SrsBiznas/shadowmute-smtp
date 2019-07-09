@@ -5,6 +5,7 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, FSM, Props}
 import com.shadowmute.ingest.configuration.Configuration
+import com.shadowmute.ingest.filters.PersonalProviderFilter
 import com.shadowmute.ingest.metrics._
 import com.shadowmute.ingest.{Logger, MailDrop, MailMessage, smtp}
 
@@ -74,6 +75,8 @@ class SmtpConnection(
     with FSM[State, Data] {
 
   startWith(Init, Uninitialized)
+
+  val personalProviderFilter = new PersonalProviderFilter(configuration)
 
   def commonCommands(verb: Verb): Response = {
     verb match {
@@ -250,7 +253,8 @@ class SmtpConnection(
         session.reversePath,
         session.sourceDomain,
         session.relayAddress.toString,
-        key = UUID.randomUUID()
+        key = UUID.randomUUID(),
+        expiration = None
       )
     })
 
@@ -267,7 +271,12 @@ class SmtpConnection(
 
           val messages = convertDataChannelToMessages(session)
           val dropper = new MailDrop(configuration, mailboxRegistry)
-          messages.foreach(message => dropper.dropMessage(message))
+          messages.foreach(message => {
+            // Apply filters
+            val filtered = personalProviderFilter.applyFilter(message)
+
+            dropper.dropMessage(filtered)
+          })
 
           MetricCollector.MessageCompleted.inc()
           sender() ! Ok("Message received")

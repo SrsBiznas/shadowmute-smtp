@@ -2,7 +2,7 @@ package com.shadowmute.ingest
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Paths
-import java.util.UUID
+import java.util.{Date, UUID}
 import java.util.concurrent.Executors
 
 import akka.actor.ActorRef
@@ -11,6 +11,7 @@ import akka.util.Timeout
 import com.shadowmute.ingest.configuration.Configuration
 import com.shadowmute.ingest.mailbox.RecipientQuery
 import com.shadowmute.ingest.metrics._
+import javax.mail.internet.MailDateFormat
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
@@ -92,6 +93,15 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
     val realPath = Paths.get(configuration.mailDrop.dropPath)
 
+    // update the expiry date at the last second
+    val expiringMessage = message.expiration.fold(message) { expiration =>
+      val mdf = new MailDateFormat()
+      val asDate = Date.from(expiration)
+      val expirationHeader = mdf.format(asDate)
+      val newBody = Vector(s"Expiry-Date: $expirationHeader") ++ message.body
+      message.copy(body = newBody)
+    }
+
     userKeyResult.map[Boolean](userKeyDir => {
       val path = new File(
         s"$realPath${File.separator}$userKeyDir"
@@ -103,7 +113,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         val outputFile = File.createTempFile("000", ".msg", path)
 
         val bw = new BufferedWriter(new FileWriter(outputFile))
-        val outputData = Json.toJson(message).toString()
+        val outputData = Json.toJson(expiringMessage).toString()
 
         MetricCollector.MessageSize.observe(outputData.length)
 

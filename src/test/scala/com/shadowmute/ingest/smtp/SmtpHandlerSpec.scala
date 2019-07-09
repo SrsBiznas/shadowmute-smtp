@@ -10,6 +10,7 @@ import akka.util.ByteString
 import com.shadowmute.ingest.TLSSessionGenerator
 import com.shadowmute.ingest.configuration.{
   Configuration,
+  FilterConfiguration,
   MailDropConfiguration,
   TlsConfiguration
 }
@@ -82,6 +83,8 @@ class SmtpHandlerSpec extends WordSpec with MustMatchers {
         override def mailboxObservationInterval: Int = ???
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val emptyActor = system.actorOf(Props[AlwaysNoneActor])

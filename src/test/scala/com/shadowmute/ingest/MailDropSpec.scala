@@ -3,6 +3,7 @@ package com.shadowmute.ingest
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.{Files, Path}
+import java.time.Instant
 import java.util.{Comparator, UUID}
 
 import akka.actor.{Actor, ActorSystem, Props}
@@ -10,6 +11,7 @@ import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
 import com.shadowmute.ingest.configuration.{
   Configuration,
+  FilterConfiguration,
   MailDropConfiguration,
   TlsConfiguration
 }
@@ -27,7 +29,7 @@ class MailDropSpec
 
   "Mail Drop" must {
 
-    "Write a message to the user folder" in {
+    "write a message to the user folder" in {
 
       val uuid = UUID.randomUUID()
 
@@ -39,7 +41,8 @@ class MailDropSpec
         reversePath = Some("reverse@drop.path"),
         sourceDomain = "drop.path",
         relayIP = relayIP.toString,
-        UUID.randomUUID()
+        key = UUID.randomUUID(),
+        expiration = None
       )
 
       val dropPathTarget = Files.createTempDirectory(
@@ -65,6 +68,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -75,7 +80,7 @@ class MailDropSpec
 
       Await.ready(
         dropper.dropMessage(newMessage),
-        200.millis
+        300.millis
       )
 
       import scala.collection.JavaConverters._
@@ -137,6 +142,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -196,6 +203,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -241,6 +250,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -285,6 +296,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -317,6 +330,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -356,6 +371,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val targetUserKey = UUID.randomUUID()
@@ -422,6 +439,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val staticConfig = new StaticConfig()
@@ -483,6 +502,8 @@ class MailDropSpec
         }
 
         override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
       }
 
       val canaryUuid = UUID.randomUUID()
@@ -525,6 +546,85 @@ class MailDropSpec
         Source.fromFile(dropped.toString).getLines.mkString("")
 
       src.contains(canaryUuid.toString) mustBe true
+    }
+
+    "write a message with an expiration to the user folder" in {
+
+      val uuid = UUID.randomUUID()
+
+      val relayIP = new InetSocketAddress("21.22.23.24", 25)
+
+      val expiration = Instant.ofEpochSecond(1562634077)
+      val newMessage = MailMessage(
+        recipient = s"$uuid@shadowmute.com",
+        body = Vector("test", "body"),
+        reversePath = Some("reverse@drop.path"),
+        sourceDomain = "drop.path",
+        relayIP = relayIP.toString,
+        key = UUID.randomUUID(),
+        expiration = Option(expiration)
+      )
+
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_563_"
+      )
+      dropPathTarget.toFile.deleteOnExit()
+
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
+          }
+
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+
+        override def tls: TlsConfiguration = ???
+
+        override def filters: FilterConfiguration = ???
+      }
+
+      val staticConfig = new StaticConfig()
+
+      val dropper =
+        new MailDrop(staticConfig,
+                     system.actorOf(Props(new UnwrappedEchoActor())))
+
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
+
+      import scala.collection.JavaConverters._
+
+      val recipientTarget = dropPathTarget.resolve(uuid.toString)
+
+      recipientTarget.toFile.deleteOnExit()
+
+      Files.exists(recipientTarget) mustBe true
+
+      val recipientContents =
+        Files.newDirectoryStream(recipientTarget).asScala.toList
+
+      recipientContents.length mustBe 1
+
+      val droppedFile = recipientTarget.resolve(recipientContents.head)
+      val src =
+        Source.fromFile(droppedFile.toString).getLines.mkString("")
+
+      src.contains(uuid.toString) mustBe true
+
+      src.contains("Expiry-Date: Tue, 9 Jul 2019 01:01:17 +0000 (UTC)") mustBe true
+
+      droppedFile.toFile.deleteOnExit()
     }
   }
 }
