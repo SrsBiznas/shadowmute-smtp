@@ -382,7 +382,7 @@ class SmtpConnectionSpec
       actorState.state mustBe Greeted
     }
 
-    "Ensure the file gets saved when an incoming message ends" in {
+    "ensure the file gets saved when an incoming message ends" in {
       val recipient = UUID.randomUUID().toString
 
       val uea = system.actorOf(Props(new UnwrappedEchoActor()))
@@ -462,7 +462,14 @@ class SmtpConnectionSpec
       val src =
         Source.fromFile(droppedFile.toString).getLines.mkString("")
 
-      src.contains(random.toString) mustBe true
+      val randomFound = src.contains(random.toString)
+      if (!randomFound) {
+        // Debugging a heisentest
+        Logger().debug(s"SRC: $src")
+        Logger().debug(s"RND: ${random.toString}")
+      }
+
+      randomFound mustBe true
 
       droppedFile.toFile.deleteOnExit()
     }
