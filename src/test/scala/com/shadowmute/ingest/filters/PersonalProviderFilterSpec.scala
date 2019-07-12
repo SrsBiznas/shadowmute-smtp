@@ -24,6 +24,8 @@ class PersonalProviderFilterSpec extends WordSpec with MustMatchers {
           override def specialMailboxDirectory: String = "special"
 
           override def specialMailboxes: Seq[String] = Nil
+
+          override def defaultExpirationDays: Int = 60
         }
 
       override def mailboxObservationInterval: Int = 1
@@ -32,7 +34,7 @@ class PersonalProviderFilterSpec extends WordSpec with MustMatchers {
         List("shadowmute.com")
       }
 
-      override def tls: TlsConfiguration = ???
+      override def tls: TlsConfiguration = null
 
       override def filters: FilterConfiguration = new FilterConfiguration {
         override def personalProviders: Seq[String] = List(

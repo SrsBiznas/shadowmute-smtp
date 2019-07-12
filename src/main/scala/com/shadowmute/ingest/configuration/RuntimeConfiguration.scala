@@ -24,6 +24,9 @@ class RuntimeConfiguration extends Configuration {
         .asScala
         .map(_.toLowerCase)
     }
+    override def defaultExpirationDays: Int = mailDropConfig.getInt(
+      "defaultExpirationDays"
+    )
   }
 
   override val mailboxObservationInterval: Int =

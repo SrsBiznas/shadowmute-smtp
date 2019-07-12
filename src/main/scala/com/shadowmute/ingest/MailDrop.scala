@@ -2,6 +2,8 @@ package com.shadowmute.ingest
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Paths
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.{Date, UUID}
 import java.util.concurrent.Executors
 
@@ -61,6 +63,27 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
     }
   }
 
+  private def updateMessageExpiration(message: MailMessage) = {
+    val messageExpiry = message.expiration.getOrElse(
+      Instant
+        .now()
+        .plus(
+          configuration.mailDrop.defaultExpirationDays,
+          ChronoUnit.DAYS
+        )
+    )
+
+    val mdf = new MailDateFormat()
+    val asDate = Date.from(messageExpiry)
+    val expirationHeader = mdf.format(asDate)
+    val expiringBody = Vector(s"Expiry-Date: $expirationHeader") ++ message.body
+
+    message.copy(
+      body = expiringBody,
+      expiration = Option(messageExpiry)
+    )
+  }
+
   def dropMessage(message: MailMessage): Future[Boolean] = {
 
     val extractedRecipient = extractRecipientMailbox(message.recipient)
@@ -94,13 +117,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
     val realPath = Paths.get(configuration.mailDrop.dropPath)
 
     // update the expiry date at the last second
-    val expiringMessage = message.expiration.fold(message) { expiration =>
-      val mdf = new MailDateFormat()
-      val asDate = Date.from(expiration)
-      val expirationHeader = mdf.format(asDate)
-      val newBody = Vector(s"Expiry-Date: $expirationHeader") ++ message.body
-      message.copy(body = newBody)
-    }
+    val expiringMessage = updateMessageExpiration(message)
 
     userKeyResult.map[Boolean](userKeyDir => {
       val path = new File(
