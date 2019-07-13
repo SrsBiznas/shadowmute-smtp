@@ -414,6 +414,8 @@ class SmtpConnectionSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
 
         override def mailboxObservationInterval: Int = 1
@@ -422,7 +424,7 @@ class SmtpConnectionSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
         override def filters: FilterConfiguration = new FilterConfiguration {
           override def personalProviders: Seq[String] = Nil

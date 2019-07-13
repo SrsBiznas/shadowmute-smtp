@@ -20,6 +20,8 @@ trait MailDropConfiguration {
   def specialMailboxDirectory: String
 
   def specialMailboxes: Seq[String]
+
+  def defaultExpirationDays: Int
 }
 
 trait TlsConfiguration {

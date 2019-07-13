@@ -59,6 +59,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
 
         override def mailboxObservationInterval: Int = 1
@@ -67,9 +69,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -134,6 +136,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -141,9 +145,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -195,6 +199,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -202,9 +208,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -242,6 +248,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -249,9 +257,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -288,6 +296,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -295,9 +305,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -322,6 +332,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -329,9 +341,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -363,6 +375,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -370,9 +384,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val targetUserKey = UUID.randomUUID()
@@ -431,6 +445,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -438,9 +454,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -475,8 +491,6 @@ class MailDropSpec
     }
 
     "Ensure a message to a special box ends up in the special handler drop" in {
-      val unknownUuid = UUID.randomUUID()
-
       val relayIP = new InetSocketAddress("69.70.71.72", 25)
 
       val dropPathTarget = Files.createTempDirectory(
@@ -494,6 +508,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes = List("testing")
+
+            override def defaultExpirationDays: Int = 60
           }
         override def mailboxObservationInterval: Int = 1
 
@@ -501,9 +517,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val canaryUuid = UUID.randomUUID()
@@ -548,7 +564,7 @@ class MailDropSpec
       src.contains(canaryUuid.toString) mustBe true
     }
 
-    "write a message with an expiration to the user folder" in {
+    "write a personal provider message with an expiration to the user folder" in {
 
       val uuid = UUID.randomUUID()
 
@@ -579,6 +595,8 @@ class MailDropSpec
             override def specialMailboxDirectory: String = "special"
 
             override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
           }
 
         override def mailboxObservationInterval: Int = 1
@@ -587,9 +605,9 @@ class MailDropSpec
           List("shadowmute.com")
         }
 
-        override def tls: TlsConfiguration = ???
+        override def tls: TlsConfiguration = null
 
-        override def filters: FilterConfiguration = ???
+        override def filters: FilterConfiguration = null
       }
 
       val staticConfig = new StaticConfig()
@@ -623,6 +641,86 @@ class MailDropSpec
       src.contains(uuid.toString) mustBe true
 
       src.contains("Expiry-Date: Tue, 9 Jul 2019 01:01:17 +0000 (UTC)") mustBe true
+
+      droppedFile.toFile.deleteOnExit()
+    }
+
+    "write a message with a default expiration to the user folder" in {
+
+      val uuid = UUID.randomUUID()
+
+      val relayIP = new InetSocketAddress("21.22.23.24", 25)
+
+      val newMessage = MailMessage(
+        recipient = s"$uuid@shadowmute.com",
+        body = Vector("test", "body"),
+        reversePath = Some("reverse@drop.path"),
+        sourceDomain = "drop.path",
+        relayIP = relayIP.toString,
+        key = UUID.randomUUID(),
+        expiration = None
+      )
+
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_648_"
+      )
+      dropPathTarget.toFile.deleteOnExit()
+
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+
+            override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
+          }
+
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("shadowmute.com")
+        }
+
+        override def tls: TlsConfiguration = null
+
+        override def filters: FilterConfiguration = null
+      }
+
+      val staticConfig = new StaticConfig()
+
+      val dropper =
+        new MailDrop(staticConfig,
+                     system.actorOf(Props(new UnwrappedEchoActor())))
+
+      Await.ready(
+        dropper.dropMessage(newMessage),
+        200.millis
+      )
+
+      import scala.collection.JavaConverters._
+
+      val recipientTarget = dropPathTarget.resolve(uuid.toString)
+
+      recipientTarget.toFile.deleteOnExit()
+
+      Files.exists(recipientTarget) mustBe true
+
+      val recipientContents =
+        Files.newDirectoryStream(recipientTarget).asScala.toList
+
+      recipientContents.length mustBe 1
+
+      val droppedFile = recipientTarget.resolve(recipientContents.head)
+      val src =
+        Source.fromFile(droppedFile.toString).getLines.mkString("")
+
+      src.contains(uuid.toString) mustBe true
+
+      src.contains("Expiry-Date: ") mustBe true
 
       droppedFile.toFile.deleteOnExit()
     }
