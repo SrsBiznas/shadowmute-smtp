@@ -95,14 +95,17 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         .fold(
           // This *must* be folded to push the option into the Future
           Future.successful(None: Option[String])
-        )(address =>
-          if (specialMailboxes.contains(address)) {
-            MetricCollector.SpecialMailboxRouted.inc()
-            Future.successful(
-              Option(configuration.mailDrop.specialMailboxDirectory))
-          } else {
-            convertMailboxToUserKeyPath(address)
-        })
+        )(
+          address =>
+            if (specialMailboxes.contains(address)) {
+              MetricCollector.SpecialMailboxRouted.inc()
+              Future.successful(
+                Option(configuration.mailDrop.specialMailboxDirectory)
+              )
+            } else {
+              convertMailboxToUserKeyPath(address)
+            }
+        )
         .map(
           _.fold({
 

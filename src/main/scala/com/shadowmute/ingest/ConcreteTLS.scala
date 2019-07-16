@@ -34,19 +34,22 @@ class ConcreteTLS(configuration: TlsConfiguration) extends TLSSessionGenerator {
   private val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
   keyManagerFactory.init(keyStore, passphrase)
 
-  def newSession(
-      implicit actorSystem: ActorSystem): BidiFlow[TLSProtocol.SslTlsOutbound,
-                                                   ByteString,
-                                                   ByteString,
-                                                   TLSProtocol.SslTlsInbound,
-                                                   NotUsed] = {
+  def newSession(implicit actorSystem: ActorSystem): BidiFlow[
+    TLSProtocol.SslTlsOutbound,
+    ByteString,
+    ByteString,
+    TLSProtocol.SslTlsInbound,
+    NotUsed
+  ] = {
 
     val sslConfig = AkkaSSLConfig()
 
     val sslContext = SSLContext.getInstance("TLS")
-    sslContext.init(keyManagerFactory.getKeyManagers,
-                    trustManagerFactory.getTrustManagers,
-                    new SecureRandom)
+    sslContext.init(
+      keyManagerFactory.getKeyManagers,
+      trustManagerFactory.getTrustManagers,
+      new SecureRandom
+    )
 
     val defaultParams = sslContext.getDefaultSSLParameters
     val defaultProtocols = defaultParams.getProtocols

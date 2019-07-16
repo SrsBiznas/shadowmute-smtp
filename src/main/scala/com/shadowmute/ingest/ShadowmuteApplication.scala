@@ -29,10 +29,10 @@ object ShadowmuteApplication extends App {
   val mailboxObserver =
     system.actorOf(Props(classOf[UpstreamMailboxObserver], mailboxRegistry))
 
-  system.scheduler.schedule(0.millis,
-                            configuration.mailboxObservationInterval.seconds) {
-    mailboxObserver ! 'refresh
-  }(system.dispatcher)
+  system.scheduler
+    .schedule(0.millis, configuration.mailboxObservationInterval.seconds) {
+      mailboxObserver ! 'refresh
+    }(system.dispatcher)
 
   DefaultExports.initialize()
 

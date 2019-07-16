@@ -13,9 +13,11 @@ class DataLayer {
 
   case class UserRecord(id: Long, key: UUID)
 
-  case class RecipientRecord(ownerId: Long,
-                             mailbox: UUID,
-                             mailboxId: Option[Long])
+  case class RecipientRecord(
+      ownerId: Long,
+      mailbox: UUID,
+      mailboxId: Option[Long]
+  )
 
   class Users(tag: Tag) extends Table[UserRecord](tag, "users") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -42,7 +44,8 @@ class DataLayer {
     try {
       val query = for {
         (r, u) <- TableQuery[Recipients].filter(_.id.getOrElse(0L) > partition) join TableQuery[
-          Users] on (_.ownerId === _.id)
+          Users
+        ] on (_.ownerId === _.id)
       } yield (r.mailbox, u.key, r.id)
 
       db.run(query.result)
@@ -71,8 +74,8 @@ class DataLayer {
         })
         .recover {
           case exception: Exception =>
-            Logger().error("[!] Error connecting to accounts database:",
-                           exception)
+            Logger()
+              .error("[!] Error connecting to accounts database:", exception)
             RecipientSet(Nil, -1)
         }
     } catch {

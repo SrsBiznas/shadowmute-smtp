@@ -120,11 +120,13 @@ class SwitchingBidiFlow()
   val toConcreteInboundTLS: Outlet[ByteString] = Outlet("toConcreteTLSInbound")
 
   val fromSmtpProcessor: Inlet[(ByteString, Option[SwitchTarget])] = Inlet(
-    "ProcessedSmtpResult")
+    "ProcessedSmtpResult"
+  )
 
   val toPlaceboOutboundTLS: Outlet[ByteString] = Outlet("toPlaceboTLSOutbound")
   val toConcreteOutboundTLS: Outlet[ByteString] = Outlet(
-    "toConcreteTLSOutbound")
+    "toConcreteTLSOutbound"
+  )
 
   override def shape =
     SwitchingBidiShape(

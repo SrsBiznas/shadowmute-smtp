@@ -18,7 +18,8 @@ class UpstreamMailboxObserver(registry: ActorRef) extends Actor {
   def refreshMailboxes() {
 
     Logger().info(
-      s"[*] Refreshing mailboxes greater than $lastIdentifiedMailbox")
+      s"[*] Refreshing mailboxes greater than $lastIdentifiedMailbox"
+    )
 
     dataLayer
       .getAllRecipients(partition = lastIdentifiedMailbox)

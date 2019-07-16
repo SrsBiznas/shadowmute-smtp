@@ -67,7 +67,8 @@ object CommandParser {
   }
 
   def parse(
-      incoming: SmtpConnection.IncomingMessage): Either[Response, Verb] = {
+      incoming: SmtpConnection.IncomingMessage
+  ): Either[Response, Verb] = {
     val verbAction = incoming.message.split(" ", 2)
 
     val verb = verbAction(0).toLowerCase

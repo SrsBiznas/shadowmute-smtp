@@ -30,16 +30,18 @@ class SmtpHandler(
 
   implicit val timeout: Timeout = 5.seconds
 
-  def handle(incomingConnection: IncomingConnection)(
-      implicit m: Materializer): NotUsed = {
+  def handle(
+      incomingConnection: IncomingConnection
+  )(implicit m: Materializer): NotUsed = {
 
     val serverFlow = wrappedFlow(incomingConnection)
 
     incomingConnection.handleWith(serverFlow)
   }
 
-  def smtpProcessorFlow(incomingConnection: IncomingConnection)
-    : Flow[ByteString, Response, NotUsed] = {
+  def smtpProcessorFlow(
+      incomingConnection: IncomingConnection
+  ): Flow[ByteString, Response, NotUsed] = {
     val welcomeMessage =
       Source.single(SmtpConnection.SendBanner(incomingConnection.remoteAddress))
 
@@ -49,9 +51,12 @@ class SmtpHandler(
 
     val processedSmtp = Flow[ByteString]
       .via(
-        Framing.delimiter(ByteString(SmtpHandler.NL),
-                          maximumFrameLength = maxumumMessageSize,
-                          allowTruncation = true))
+        Framing.delimiter(
+          ByteString(SmtpHandler.NL),
+          maximumFrameLength = maxumumMessageSize,
+          allowTruncation = true
+        )
+      )
       .map(_.utf8String)
 
       // Portion of the handler where it drops into genuine SMTP verb decoding
@@ -59,8 +64,9 @@ class SmtpHandler(
 
       // Trigger the banner
       .merge(welcomeMessage)
-      .mapAsync[Response](1)(m =>
-        (connectionProcessor ? m).asInstanceOf[Future[Response]])
+      .mapAsync[Response](1)(
+        m => (connectionProcessor ? m).asInstanceOf[Future[Response]]
+      )
 
       // Catch the connection close requests
       .takeWhile(_.isInstanceOf[ClosingConnection] == false, inclusive = true)
@@ -72,16 +78,20 @@ class SmtpHandler(
   }
 
   def generateSwitchableTlsFlow(
-      placeboTLS: BidiFlow[SslTlsOutbound,
-                           ByteString,
-                           ByteString,
-                           SslTlsInbound,
-                           NotUsed],
-      concreteTlsSession: BidiFlow[SslTlsOutbound,
-                                   ByteString,
-                                   ByteString,
-                                   SslTlsInbound,
-                                   NotUsed],
+      placeboTLS: BidiFlow[
+        SslTlsOutbound,
+        ByteString,
+        ByteString,
+        SslTlsInbound,
+        NotUsed
+      ],
+      concreteTlsSession: BidiFlow[
+        SslTlsOutbound,
+        ByteString,
+        ByteString,
+        SslTlsInbound,
+        NotUsed
+      ],
       smtpProcessor: Flow[ByteString, Response, NotUsed]
   ): Flow[ByteString, ByteString, NotUsed] = {
 
@@ -152,8 +162,9 @@ class SmtpHandler(
     )
   }
 
-  def wrappedFlow(incomingConnection: IncomingConnection)
-    : Flow[ByteString, ByteString, NotUsed] = {
+  def wrappedFlow(
+      incomingConnection: IncomingConnection
+  ): Flow[ByteString, ByteString, NotUsed] = {
 
     val placeboTLS = TLSPlacebo()
 

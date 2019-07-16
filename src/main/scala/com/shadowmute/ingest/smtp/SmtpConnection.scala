@@ -34,11 +34,13 @@ case class MailSession(
   }
 
   def openDataChannel(): DataChannel = {
-    DataChannel(relayAddress,
-                sourceDomain,
-                reversePath,
-                recipients,
-                Vector.empty)
+    DataChannel(
+      relayAddress,
+      sourceDomain,
+      reversePath,
+      recipients,
+      Vector.empty
+    )
   }
 }
 
@@ -109,8 +111,10 @@ class SmtpConnection(
   }
 
   when(Connected) {
-    case Event(incoming: SmtpConnection.IncomingMessage,
-               connection: Connection) =>
+    case Event(
+        incoming: SmtpConnection.IncomingMessage,
+        connection: Connection
+        ) =>
       // Logger().debug(s"[*] Incoming ${incoming}")
       CommandParser
         .parse(incoming)
@@ -142,8 +146,10 @@ class SmtpConnection(
   }
 
   when(Greeted) {
-    case Event(incoming: SmtpConnection.IncomingMessage,
-               session: InitialSession) =>
+    case Event(
+        incoming: SmtpConnection.IncomingMessage,
+        session: InitialSession
+        ) =>
       CommandParser
         .parse(incoming)
         .fold(
@@ -180,9 +186,11 @@ class SmtpConnection(
       stay()
   }
 
-  def replyToEhlo(sender: ActorRef,
-                  relayAddress: InetSocketAddress,
-                  sourceDomain: String): FSM.State[smtp.State, Data] = {
+  def replyToEhlo(
+      sender: ActorRef,
+      relayAddress: InetSocketAddress,
+      sourceDomain: String
+  ): FSM.State[smtp.State, Data] = {
 
     Logger().debug(s"[*] EHLO from $sourceDomain")
     sender ! Ok(List("shadowmute.com", "8BITMIME", "SMTPUTF8", "STARTTLS"))
@@ -190,8 +198,10 @@ class SmtpConnection(
   }
 
   when(IncomingMessage) {
-    case Event(incoming: SmtpConnection.IncomingMessage,
-               session: MailSession) =>
+    case Event(
+        incoming: SmtpConnection.IncomingMessage,
+        session: MailSession
+        ) =>
       CommandParser
         .parse(incoming)
         .fold(
@@ -202,8 +212,8 @@ class SmtpConnection(
             case rcptVerb: Rcpt =>
               if (session.recipients.length < 100) {
                 sender() ! Ok("Ok")
-                goto(IncomingMessage) using session.withRecipient(
-                  rcptVerb.recipient)
+                goto(IncomingMessage) using session
+                  .withRecipient(rcptVerb.recipient)
               } else {
                 sender ! TooManyRecipients()
                 stay()
@@ -261,8 +271,10 @@ class SmtpConnection(
   }
 
   when(DataChannel) {
-    case Event(incoming: SmtpConnection.IncomingMessage,
-               session: DataChannel) =>
+    case Event(
+        incoming: SmtpConnection.IncomingMessage,
+        session: DataChannel
+        ) =>
       val dataLine = incoming.message
 
       dataLine match {
