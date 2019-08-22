@@ -94,7 +94,7 @@ class SwitchingBidiFlowSpec
       val result = Await
         .result(
           completeGraph,
-          500.millis
+          1000.millis
         )
         .map(_.asByteBuffer.getInt)
 

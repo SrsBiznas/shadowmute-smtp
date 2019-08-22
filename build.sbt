@@ -34,6 +34,11 @@ mainClass in (Compile, run) := Some(
 
 unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
+javaOptions in Universal ++= Seq(
+  "-Dconfig.file=/etc/shadowmute/ingest.conf",
+  "-Dlogger.file=/etc/shadowmute/logger.xml"
+)
+
 // This is important to prevent tests from hitting the dev DB
 javaOptions in Test += s"-Dconfig.file=${sourceDirectory.value}/test/resources/testing.conf"
 javaOptions in Test += "-Duser.timezone=UTC"
@@ -62,6 +67,5 @@ dockerUpdateLatest := true
 
 dockerExposedPorts ++= Seq(2025)
 
-dockerEntrypoint := Seq("bin/shadowmute-ingest",
-                        "-Dconfig.file=/etc/shadowmute/default.conf",
-                        "-Dlogger.file=/etc/shadowmute/logger.xml")
+
+dockerEntrypoint := Seq("bin/shadowmute-ingest")
