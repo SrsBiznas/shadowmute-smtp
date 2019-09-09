@@ -1,6 +1,6 @@
 name := "shadowmute-ingest"
 
-version := "0.11.1"
+version := "0.12.0"
 
 scalaVersion := "2.12.8"
 
