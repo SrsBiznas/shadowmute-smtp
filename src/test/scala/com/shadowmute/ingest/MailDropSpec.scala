@@ -77,8 +77,10 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig,
-                     system.actorOf(Props(new UnwrappedEchoActor())))
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new UnwrappedEchoActor()))
+        )
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -348,8 +350,10 @@ class MailDropSpec
 
       val staticConfig = new StaticConfig()
       val mailDrop =
-        new MailDrop(staticConfig,
-                     system.actorOf(Props(new UnwrappedEchoActor())))
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new UnwrappedEchoActor()))
+        )
 
       val nonCompliant = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 
@@ -399,8 +403,10 @@ class MailDropSpec
 
       val staticConfig = new StaticConfig()
       val mailDrop =
-        new MailDrop(staticConfig,
-                     system.actorOf(Props(new SimulatedUserRegistry())))
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new SimulatedUserRegistry()))
+        )
 
       val incomingMailbox = UUID.randomUUID()
 
@@ -613,8 +619,10 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig,
-                     system.actorOf(Props(new UnwrappedEchoActor())))
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new UnwrappedEchoActor()))
+        )
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -693,8 +701,10 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig,
-                     system.actorOf(Props(new UnwrappedEchoActor())))
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new UnwrappedEchoActor()))
+        )
 
       Await.ready(
         dropper.dropMessage(newMessage),

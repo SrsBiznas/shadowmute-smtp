@@ -90,19 +90,22 @@ class SmtpHandlerSpec extends WordSpec with MustMatchers {
       val emptyActor = system.actorOf(Props[AlwaysNoneActor])
 
       val emptyTLSGenerator = new TLSSessionGenerator {
-        override def newSession(implicit actorSystem: ActorSystem)
-          : BidiFlow[TLSProtocol.SslTlsOutbound,
-                     ByteString,
-                     ByteString,
-                     TLSProtocol.SslTlsInbound,
-                     NotUsed] = ???
+        override def newSession(implicit actorSystem: ActorSystem): BidiFlow[
+          TLSProtocol.SslTlsOutbound,
+          ByteString,
+          ByteString,
+          TLSProtocol.SslTlsInbound,
+          NotUsed
+        ] = ???
       }
 
       val smtpHandler =
         new SmtpHandler(system, emptyConfig, emptyActor, emptyTLSGenerator)
-      val partialGraph = smtpHandler.generateSwitchableTlsFlow(initialTLS,
-                                                               secondaryTLS,
-                                                               dummyFlow)
+      val partialGraph = smtpHandler.generateSwitchableTlsFlow(
+        initialTLS,
+        secondaryTLS,
+        dummyFlow
+      )
 
       val terminus = Sink.seq[ByteString]
 

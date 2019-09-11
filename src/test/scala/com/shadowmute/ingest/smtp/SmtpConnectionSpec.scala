@@ -57,10 +57,12 @@ class SmtpConnectionSpec
     "send a banner when in an initial state" in {
       val smtpConnection =
         system.actorOf(
-          Props(new SmtpConnection(basicConfiguration, blackholeRegistry)))
+          Props(new SmtpConnection(basicConfiguration, blackholeRegistry))
+        )
 
       smtpConnection ! SmtpConnection.SendBanner(
-        new InetSocketAddress("1.2.3.4", 25))
+        new InetSocketAddress("1.2.3.4", 25)
+      )
 
       receiveOne(10.seconds).toString must startWith("220 ")
     }
@@ -148,7 +150,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        "MAIL FROM:<duplicated@sender>")
+        "MAIL FROM:<duplicated@sender>"
+      )
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
@@ -158,7 +161,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        "MAIL FROM:<early@sender>")
+        "MAIL FROM:<early@sender>"
+      )
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
@@ -187,7 +191,8 @@ class SmtpConnectionSpec
 
       for (i <- 1 to 100) {
         smtpConnection ! SmtpConnection.IncomingMessage(
-          s"RCPT TO:<new@receipt.$i>")
+          s"RCPT TO:<new@receipt.$i>"
+        )
       }
       // Discard the 100 responses
       receiveN(100)
@@ -201,7 +206,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new ConnectedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        "RCPT TO:<test@testing.source>")
+        "RCPT TO:<test@testing.source>"
+      )
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
@@ -211,7 +217,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new GreetedActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        "RCPT TO:<test@testing.source>")
+        "RCPT TO:<test@testing.source>"
+      )
 
       receiveOne(10.seconds).toString must startWith("503 ")
     }
@@ -230,7 +237,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        s"RCPT TO:<new@receipt.data>")
+        s"RCPT TO:<new@receipt.data>"
+      )
 
       receiveOne(10.seconds)
 
@@ -243,7 +251,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        s"RCPT TO:<new@receipt.data>")
+        s"RCPT TO:<new@receipt.data>"
+      )
 
       receiveOne(10.seconds)
 
@@ -267,7 +276,8 @@ class SmtpConnectionSpec
     "Respond with command out of order Data command is received in Initial state" in {
       val smtpConnection =
         system.actorOf(
-          Props(new SmtpConnection(basicConfiguration, blackholeRegistry)))
+          Props(new SmtpConnection(basicConfiguration, blackholeRegistry))
+        )
       smtpConnection ! SmtpConnection.IncomingMessage("Data")
 
       receiveOne(10.seconds).toString must startWith("503 ")
@@ -287,7 +297,8 @@ class SmtpConnectionSpec
         system.actorOf(Props(new IncomingMessageActor(basicConfiguration)))
 
       smtpConnection ! SmtpConnection.IncomingMessage(
-        s"RCPT TO:<new@receipt.data>")
+        s"RCPT TO:<new@receipt.data>"
+      )
 
       receiveOne(10.seconds)
 
@@ -391,11 +402,13 @@ class SmtpConnectionSpec
           extends SmtpConnection(configuration, uea) {
         startWith(
           DataChannel,
-          DataChannel(new InetSocketAddress("1.2.3.4", 25),
-                      "test",
-                      None,
-                      List(s"$recipient@shadowmute.com"),
-                      Vector.empty)
+          DataChannel(
+            new InetSocketAddress("1.2.3.4", 25),
+            "test",
+            None,
+            List(s"$recipient@shadowmute.com"),
+            Vector.empty
+          )
         )
       }
 
@@ -452,7 +465,8 @@ class SmtpConnectionSpec
       recipientTarget.toFile.deleteOnExit()
 
       Logger().debug(
-        s"Looking for recipient target: ${recipientTarget.toString}")
+        s"Looking for recipient target: ${recipientTarget.toString}"
+      )
       Files.exists(recipientTarget) mustBe true
 
       val recipientContents =

@@ -78,7 +78,8 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
     "parse a MAIL with extra parameters command" in {
       val incoming = SmtpConnection.IncomingMessage(
-        "MAIL FROM:<userx@y.foo.org> some extension parameters")
+        "MAIL FROM:<userx@y.foo.org> some extension parameters"
+      )
       val parsed = CommandParser.parse(incoming)
 
       val parseResult = parsed.right.value
@@ -171,7 +172,8 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
     "parse a RCPT with extra parameters command" in {
       val incoming = SmtpConnection.IncomingMessage(
-        "RCPT TO:<userx@y.foo.org> some extension parameters")
+        "RCPT TO:<userx@y.foo.org> some extension parameters"
+      )
       val parsed = CommandParser.parse(incoming)
 
       val parseResult = parsed.right.value

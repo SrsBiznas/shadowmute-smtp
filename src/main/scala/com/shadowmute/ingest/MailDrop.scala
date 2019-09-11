@@ -139,6 +139,8 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
         bw.write(outputData)
 
+        bw.flush()
+
         bw.close()
         true
       } else {

@@ -15,7 +15,10 @@ object ShadowmuteApplication extends App {
   val configuration = new RuntimeConfiguration()
 
   val mailboxRegistry =
-    system.actorOf(Props[MailboxRegistry], name = "MailboxRegistry")
+    system.actorOf(
+      Props(classOf[MailboxRegistry], configuration.mailDrop),
+      name = "MailboxRegistry"
+    )
 
   val concreteTLS = new ConcreteTLS(configuration.tls)
 
