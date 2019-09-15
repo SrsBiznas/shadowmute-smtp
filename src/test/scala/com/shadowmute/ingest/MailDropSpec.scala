@@ -9,13 +9,8 @@ import java.util.{Comparator, UUID}
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
-import com.shadowmute.ingest.configuration.{
-  Configuration,
-  FilterConfiguration,
-  MailDropConfiguration,
-  TlsConfiguration
-}
-import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, UnwrappedEchoActor}
+import com.shadowmute.ingest.configuration.{Configuration, FilterConfiguration, MailDropConfiguration, TlsConfiguration}
+import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, RecipientQuery, UnwrappedEchoActor}
 import org.scalatest._
 
 import scala.concurrent.Await
@@ -733,6 +728,60 @@ class MailDropSpec
       src.contains("Expiry-Date: ") mustBe true
 
       droppedFile.toFile.deleteOnExit()
+    }
+
+
+    "convert a shortened recipient mailbox into a user key directory" in {
+      val dropPathTarget = Files.createTempDirectory(
+        "smtst_741_"
+      )
+      class StaticConfig extends Configuration {
+        override val mailDrop: MailDropConfiguration =
+          new MailDropConfiguration {
+            override def dropPath: String = dropPathTarget.toString
+            override def discardDirectory: String = "discard"
+            override def specialMailboxDirectory: String = "special"
+
+            override def specialMailboxes: Seq[String] = Nil
+
+            override def defaultExpirationDays: Int = 60
+          }
+        override def mailboxObservationInterval: Int = 1
+
+        override val validRecipientDomains: Seq[String] = {
+          List("example.com")
+        }
+
+        override def tls: TlsConfiguration = null
+
+        override def filters: FilterConfiguration = null
+      }
+
+      val targetUserKey = UUID.randomUUID()
+
+      class SimulatedUserRegistry extends Actor {
+        override def receive: Receive = {
+          case RecipientQuery(incoming) => sender ! Option(incoming)
+        }
+      }
+
+      val staticConfig = new StaticConfig()
+      val mailDrop =
+        new MailDrop(
+          staticConfig,
+          system.actorOf(Props(new SimulatedUserRegistry()))
+        )
+
+      val incomingMailbox = "abcd1234"
+
+      val result = Await.result(
+        mailDrop.convertMailboxToUserKeyPath(incomingMailbox.toString),
+        100.millis
+      )
+
+      result mustBe defined
+
+      result mustBe Some("abcd1234-0000-0000-0000-000000000000".toString)
     }
   }
 }

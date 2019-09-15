@@ -48,16 +48,24 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
     val uuidMatch =
       "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}".r.anchored
 
+    val shortUuidMatch = "[0-9a-f]{8}".r.anchored
+
     val sanitizedMailbox = targetMailbox.toLowerCase()
+
+    implicit val timeout: Timeout = 100.millis
 
     sanitizedMailbox match {
       case uuidMatch() =>
         val mailboxAsUUID = UUID.fromString(sanitizedMailbox)
 
-        implicit val timeout: Timeout = 100.millis
         val result = mailboxRegistry ? RecipientQuery(mailboxAsUUID)
 
         result.asInstanceOf[Future[Option[UUID]]].map(_.map(_.toString))
+      case shortUuidMatch() => {
+        val msb = java.lang.Long.parseLong(sanitizedMailbox, 16) << 32
+        val result = mailboxRegistry ? RecipientQuery(new UUID(msb, 0L))
+        result.asInstanceOf[Future[Option[UUID]]].map(_.map(_.toString))
+      }
       case _ =>
         Future.successful(None)
     }
