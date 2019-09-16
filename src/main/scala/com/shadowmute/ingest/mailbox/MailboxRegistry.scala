@@ -67,7 +67,7 @@ class MailboxRegistry(mailDropConfiguration: MailDropConfiguration)
 
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-  def updateRegistry(recipient: Recipient) {
+  def updateRegistry(recipient: Recipient): Unit = {
     registry.computeIfAbsent(
       recipient.mailbox,
       _ => {

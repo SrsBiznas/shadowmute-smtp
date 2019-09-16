@@ -2,7 +2,7 @@ package com.shadowmute.ingest.configuration
 
 import com.typesafe.config.{Config, ConfigFactory}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class RuntimeConfiguration extends Configuration {
   private val source = ConfigFactory.load()
@@ -22,6 +22,7 @@ class RuntimeConfiguration extends Configuration {
       mailDropConfig
         .getStringList("specialMailboxes")
         .asScala
+        .toSeq
         .map(_.toLowerCase)
     }
     override def defaultExpirationDays: Int = mailDropConfig.getInt(
@@ -36,6 +37,7 @@ class RuntimeConfiguration extends Configuration {
     source
       .getStringList("ingest.acceptedRecipientDomains")
       .asScala
+      .toSeq
       .map(_.toLowerCase)
   }
 
@@ -55,6 +57,7 @@ class RuntimeConfiguration extends Configuration {
           "personalProviders"
         )
         .asScala
+        .toSeq
         .map(_.toLowerCase)
   }
 }

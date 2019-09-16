@@ -28,7 +28,7 @@ class StreamTcpServer(
   val smtpHandler =
     new SmtpHandler(system, configuration, mailboxRegistry, concreteTLS)
 
-  connections runForeach { connection ⇒
+  connections runForeach { connection =>
     Logger().debug(s"[*] New connection from: ${connection.remoteAddress}")
 
     smtpHandler.handle(connection)

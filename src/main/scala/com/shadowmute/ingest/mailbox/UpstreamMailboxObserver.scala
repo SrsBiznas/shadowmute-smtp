@@ -15,7 +15,7 @@ class UpstreamMailboxObserver(registry: ActorRef) extends Actor {
     java.util.concurrent.Executors.newSingleThreadExecutor()
   )
 
-  def refreshMailboxes() {
+  def refreshMailboxes(): Unit = {
 
     Logger().info(
       s"[*] Refreshing mailboxes greater than $lastIdentifiedMailbox"
@@ -35,6 +35,6 @@ class UpstreamMailboxObserver(registry: ActorRef) extends Actor {
   }
 
   override def receive: Receive = {
-    case 'refresh => refreshMailboxes()
+    case Symbol("refresh") => refreshMailboxes()
   }
 }

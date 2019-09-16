@@ -68,14 +68,14 @@ class DataLayerSpec extends WordSpec with MustMatchers {
         100.millis
       )
 
-      val recipientId1 = Await.result(
+      Await.result(
         dataLayer.createRecipientRecord(
           dataLayer.RecipientRecord(newUser.id, mailbox, None)
         ),
         100.millis
       )
 
-      val recipientId2 = Await.result(
+      Await.result(
         dataLayer.createRecipientRecord(
           dataLayer.RecipientRecord(newUser.id, mailbox, None)
         ),

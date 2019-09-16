@@ -26,8 +26,8 @@ class SmtpHandlerSpec extends WordSpec with MustMatchers {
       // This tests the termination flow logic inside the
       // SmtpHandler, but hasn't been isolated so this test
       // is effectively dead code
-      implicit val system = ActorSystem("reactive-tweets")
-      implicit val materializer = ActorMaterializer()
+      implicit val system: ActorSystem = ActorSystem("reactive-tweets")
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val expectedCloser = ClosingConnection("Bye")
       val terminationFlow = Flow[Response]
@@ -62,7 +62,7 @@ class SmtpHandlerSpec extends WordSpec with MustMatchers {
       val testData = List(1, 2, 3, 4, 1005, -6, -7, -8, -9, -10)
 
       val ints: Source[ByteString, NotUsed] = Source
-        .fromIterator(() => testData.toIterator)
+        .fromIterator(() => testData.iterator)
         .map[ByteString](b => {
 
           val bb = ByteBuffer.allocate(4)

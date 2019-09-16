@@ -12,6 +12,8 @@ import com.shadowmute.ingest.configuration.TlsConfiguration
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 
+import scala.collection.immutable.ArraySeq
+
 trait TLSSessionGenerator {
   def newSession(implicit actorSystem: ActorSystem): BidiFlow[
     TLSProtocol.SslTlsOutbound,
@@ -64,8 +66,8 @@ class ConcreteTLS(configuration: TlsConfiguration) extends TLSSessionGenerator {
     defaultParams.setCipherSuites(cipherSuites)
 
     val negotiateNewSession = TLSProtocol.NegotiateNewSession
-      .withCipherSuites(cipherSuites: _*)
-      .withProtocols(protocols: _*)
+      .withCipherSuites(ArraySeq.unsafeWrapArray(cipherSuites): _*)
+      .withProtocols(ArraySeq.unsafeWrapArray(protocols): _*)
       .withParameters(defaultParams)
       .withClientAuth(TLSClientAuth.None)
 

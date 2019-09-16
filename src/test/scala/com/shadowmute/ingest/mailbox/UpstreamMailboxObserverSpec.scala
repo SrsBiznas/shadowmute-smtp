@@ -27,7 +27,7 @@ class UpstreamMailboxObserverSpec
       val observer =
         system.actorOf(Props(classOf[UpstreamMailboxObserver], probe.ref))
 
-      observer ! 'refresh
+      observer ! Symbol("refresh")
 
       probe.expectNoMessage(100.millis)
     }
@@ -62,7 +62,7 @@ class UpstreamMailboxObserverSpec
         100.millis
       )
 
-      observer ! 'refresh
+      observer ! Symbol("refresh")
 
       probe.expectMsgAllClassOf(classOf[NewMailboxEvent])
     }

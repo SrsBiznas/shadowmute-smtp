@@ -8,57 +8,58 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       val incoming = SmtpConnection.IncomingMessage("HELO sample.testing")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
+        parseResult mustBe a[Helo]
+        val helo: Helo = parseResult.asInstanceOf[Helo]
 
-      parseResult mustBe a[Helo]
-
-      val helo: Helo = parseResult.asInstanceOf[Helo]
-
-      helo.domain mustBe "sample.testing"
+        helo.domain mustBe "sample.testing"
+      })
     }
 
     "parse an EHLO command" in {
       val incoming = SmtpConnection.IncomingMessage("EHLO sample.testing")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Ehlo]
+        parseResult mustBe a[Ehlo]
 
-      val ehlo: Ehlo = parseResult.asInstanceOf[Ehlo]
+        val ehlo: Ehlo = parseResult.asInstanceOf[Ehlo]
 
-      ehlo.domain mustBe "sample.testing"
+        ehlo.domain mustBe "sample.testing"
+      })
     }
 
     "parse a NOOP command" in {
       val incoming = SmtpConnection.IncomingMessage("NOOP sample.testing")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Noop]
+        parseResult mustBe a[Noop]
 
-      val noop: Noop = parseResult.asInstanceOf[Noop]
+        val noop: Noop = parseResult.asInstanceOf[Noop]
 
-      noop.content mustBe "sample.testing"
+        noop.content mustBe "sample.testing"
+      })
     }
 
     "parse a QUIT command" in {
       val incoming = SmtpConnection.IncomingMessage("QUIT sample.testing")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
-
-      parseResult mustBe a[Quit]
+      parsed.map(parseResult => {
+        parseResult mustBe a[Quit]
+      })
     }
 
     "parse a VRFY command" in {
       val incoming = SmtpConnection.IncomingMessage("VRFY sample.testing")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
-
-      parseResult mustBe a[Vrfy]
+      parsed.map(parseResult => {
+        parseResult mustBe a[Vrfy]
+      })
     }
 
     "parse a basic MAIL command" in {
@@ -67,13 +68,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Mail]
+        parseResult mustBe a[Mail]
 
-      val mailResult = parseResult.asInstanceOf[Mail]
+        val mailResult = parseResult.asInstanceOf[Mail]
 
-      mailResult.reversePath mustBe Some("userx@y.foo.org")
+        mailResult.reversePath mustBe Some("userx@y.foo.org")
+      })
     }
 
     "parse a MAIL with extra parameters command" in {
@@ -82,40 +84,41 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       )
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Mail]
+        parseResult mustBe a[Mail]
 
-      val mailResult = parseResult.asInstanceOf[Mail]
+        val mailResult = parseResult.asInstanceOf[Mail]
 
-      mailResult.reversePath mustBe Some("userx@y.foo.org")
+        mailResult.reversePath mustBe Some("userx@y.foo.org")
+      })
     }
 
     "parse a MAIL without a FROM" in {
       val incoming = SmtpConnection.IncomingMessage("MAIL <userx@y.foo.org>")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.left.value
-
-      parseResult mustBe a[SyntaxError]
+      parsed.map(parseResult => {
+        parseResult mustBe a[SyntaxError]
+      })
     }
 
     "parse a MAIL missing the second half" in {
       val incoming = SmtpConnection.IncomingMessage("MAIL")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.left.value
-
-      parseResult mustBe a[SyntaxError]
+      parsed.map(parseResult => {
+        parseResult mustBe a[SyntaxError]
+      })
     }
 
     "parse a MAIL with an invalid return-path" in {
       val incoming = SmtpConnection.IncomingMessage("MAIL FROM:userx@y.foo.org")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.left.value
-
-      parseResult mustBe a[RequestedActionNotTaken]
+      parsed.map(parseResult => {
+        parseResult mustBe a[RequestedActionNotTaken]
+      })
     }
 
     "parse a MAIL command with an invalid email in return path" in {
@@ -124,9 +127,9 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.left.value
-
-      parseResult mustBe a[RequestedActionNotTaken]
+      parsed.map(parseResult => {
+        parseResult mustBe a[RequestedActionNotTaken]
+      })
     }
 
     "parse a MAIL command with a null return path" in {
@@ -135,13 +138,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Mail]
+        parseResult mustBe a[Mail]
 
-      val mailResult = parseResult.asInstanceOf[Mail]
+        val mailResult = parseResult.asInstanceOf[Mail]
 
-      mailResult.reversePath mustBe empty
+        mailResult.reversePath mustBe empty
+      })
     }
 
     "parse a MAIL command with a broken truncation" in {
@@ -161,13 +165,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
 
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Rcpt]
+        parseResult mustBe a[Rcpt]
 
-      val mailResult = parseResult.asInstanceOf[Rcpt]
+        val mailResult = parseResult.asInstanceOf[Rcpt]
 
-      mailResult.recipient mustBe "userx@y.foo.org"
+        mailResult.recipient mustBe "userx@y.foo.org"
+      })
     }
 
     "parse a RCPT with extra parameters command" in {
@@ -176,13 +181,14 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       )
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
+      parsed.map(parseResult => {
 
-      parseResult mustBe a[Rcpt]
+        parseResult mustBe a[Rcpt]
 
-      val mailResult = parseResult.asInstanceOf[Rcpt]
+        val mailResult = parseResult.asInstanceOf[Rcpt]
 
-      mailResult.recipient mustBe "userx@y.foo.org"
+        mailResult.recipient mustBe "userx@y.foo.org"
+      })
     }
 
     "parse a RCPT without a TO" in {
@@ -267,27 +273,27 @@ class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
       val incoming = SmtpConnection.IncomingMessage("DATA")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
-
-      parseResult mustBe a[OpenDataChannel]
+      parsed.map(parseResult => {
+        parseResult mustBe a[OpenDataChannel]
+      })
     }
 
     "parse a RSET command" in {
       val incoming = SmtpConnection.IncomingMessage("RSET")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
-
-      parseResult mustBe a[Rset]
+      parsed.map(parseResult => {
+        parseResult mustBe a[Rset]
+      })
     }
 
     "parse a STARTTLS command" in {
       val incoming = SmtpConnection.IncomingMessage("STARTTLS")
       val parsed = CommandParser.parse(incoming)
 
-      val parseResult = parsed.right.value
-
-      parseResult mustBe a[StartTLS]
+      parsed.map(parseResult => {
+        parseResult mustBe a[StartTLS]
+      })
     }
   }
 }

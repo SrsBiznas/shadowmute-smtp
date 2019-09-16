@@ -34,7 +34,7 @@ object ShadowmuteApplication extends App {
 
   system.scheduler
     .schedule(0.millis, configuration.mailboxObservationInterval.seconds) {
-      mailboxObserver ! 'refresh
+      mailboxObserver ! Symbol("refresh")
     }(system.dispatcher)
 
   DefaultExports.initialize()

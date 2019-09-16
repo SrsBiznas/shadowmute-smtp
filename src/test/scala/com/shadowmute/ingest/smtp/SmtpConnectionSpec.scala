@@ -459,7 +459,7 @@ class SmtpConnectionSpec
       Thread.sleep(500)
 
       // Ensure the UUID is in the new file
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
 
       val recipientTarget = dropPathTarget.resolve(recipient)
       recipientTarget.toFile.deleteOnExit()
@@ -494,7 +494,7 @@ class SmtpConnectionSpec
 
       // clear the receipt buffers
       receiveWhile(100.millis, 100.millis, 10) {
-        case _ => Unit
+        case _ => ()
       }
 
       val smtpConnection =

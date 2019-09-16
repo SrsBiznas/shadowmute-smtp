@@ -9,13 +9,24 @@ import java.util.{Comparator, UUID}
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
-import com.shadowmute.ingest.configuration.{Configuration, FilterConfiguration, MailDropConfiguration, TlsConfiguration}
-import com.shadowmute.ingest.mailbox.{AlwaysNoneActor, RecipientQuery, UnwrappedEchoActor}
+import com.shadowmute.ingest.configuration.{
+  Configuration,
+  FilterConfiguration,
+  MailDropConfiguration,
+  TlsConfiguration
+}
+import com.shadowmute.ingest.mailbox.{
+  AlwaysNoneActor,
+  RecipientQuery,
+  UnwrappedEchoActor
+}
 import org.scalatest._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.Source
+
+import scala.jdk.CollectionConverters._
 
 class MailDropSpec
     extends TestKit(ActorSystem("MailDropSpec"))
@@ -81,8 +92,6 @@ class MailDropSpec
         dropper.dropMessage(newMessage),
         300.millis
       )
-
-      import scala.collection.JavaConverters._
 
       val recipientTarget = dropPathTarget.resolve(uuid.toString)
 
@@ -508,7 +517,7 @@ class MailDropSpec
 
             override def specialMailboxDirectory: String = "special"
 
-            override def specialMailboxes = List("testing")
+            override def specialMailboxes: List[String] = List("testing")
 
             override def defaultExpirationDays: Int = 60
           }
@@ -624,8 +633,6 @@ class MailDropSpec
         200.millis
       )
 
-      import scala.collection.JavaConverters._
-
       val recipientTarget = dropPathTarget.resolve(uuid.toString)
 
       recipientTarget.toFile.deleteOnExit()
@@ -706,8 +713,6 @@ class MailDropSpec
         200.millis
       )
 
-      import scala.collection.JavaConverters._
-
       val recipientTarget = dropPathTarget.resolve(uuid.toString)
 
       recipientTarget.toFile.deleteOnExit()
@@ -729,7 +734,6 @@ class MailDropSpec
 
       droppedFile.toFile.deleteOnExit()
     }
-
 
     "convert a shortened recipient mailbox into a user key directory" in {
       val dropPathTarget = Files.createTempDirectory(
@@ -756,8 +760,6 @@ class MailDropSpec
 
         override def filters: FilterConfiguration = null
       }
-
-      val targetUserKey = UUID.randomUUID()
 
       class SimulatedUserRegistry extends Actor {
         override def receive: Receive = {
