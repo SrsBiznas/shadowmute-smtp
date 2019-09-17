@@ -1,6 +1,6 @@
 name := "shadowmute-ingest"
 
-version := "0.14.0"
+version := "0.14.2"
 
 scalaVersion := "2.13.0"
 
@@ -36,7 +36,8 @@ unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
 javaOptions in Universal ++= Seq(
   "-Dconfig.file=/etc/shadowmute/ingest.conf",
-  "-Dlogger.file=/etc/shadowmute/logger.xml"
+  "-Dlogger.file=/etc/shadowmute/logger.xml",
+  "-Dpidfile.path=/dev/null"
 )
 
 // This is important to prevent tests from hitting the dev DB
@@ -63,7 +64,7 @@ dockerVersion := Some(DockerVersion(18, 9, 2, None))
 daemonUserUid in Docker := Some("1000")
 daemonUser in Docker := "daemon"
 
-dockerBaseImage := "adoptopenjdk/openjdk11:alpine-slim"
+dockerBaseImage := "adoptopenjdk/openjdk11:slim"
 dockerUpdateLatest := true
 
 dockerExposedPorts ++= Seq(2025)
