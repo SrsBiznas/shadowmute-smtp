@@ -1,6 +1,6 @@
 name := "shadowmute-ingest"
 
-version := "0.14.2"
+version := "0.14.3"
 
 scalaVersion := "2.13.0"
 
@@ -61,7 +61,7 @@ enablePlugins(DockerPlugin)
 import com.typesafe.sbt.packager.docker.DockerVersion
 dockerVersion := Some(DockerVersion(18, 9, 2, None))
 
-daemonUserUid in Docker := Some("1000")
+daemonUserUid in Docker := Some("1")
 daemonUser in Docker := "daemon"
 
 dockerBaseImage := "adoptopenjdk/openjdk11:slim"
