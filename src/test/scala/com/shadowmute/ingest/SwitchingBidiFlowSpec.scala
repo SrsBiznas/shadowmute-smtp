@@ -32,7 +32,7 @@ class SwitchingBidiFlowSpec
       val testData = List(1, 2, 3, 4, 1005, -6, -7, -8, -9, -10)
 
       val ints: Source[ByteString, NotUsed] = Source
-        .fromIterator(() => testData.toIterator)
+        .fromIterator(() => testData.iterator)
         .map[ByteString](b => {
 
           val bb = ByteBuffer.allocate(4)
@@ -65,9 +65,8 @@ class SwitchingBidiFlowSpec
 
             networkIn.out ~> tlsSwitch.dataIn
 
-            tlsSwitch.ingressA ~> placebo1.in2
-
-            tlsSwitch.ingressB ~> placebo2.in2
+            tlsSwitch.plaintextWrapperIn ~> placebo1.in2
+            tlsSwitch.secureWrapperIn ~> placebo2.in2
 
             placebo1.out2.map(_.bytes) ~> mergeDecrypted
             placebo2.out2.map(_.bytes) ~> mergeDecrypted
@@ -77,8 +76,8 @@ class SwitchingBidiFlowSpec
               (unencrypted, None)
             }) ~> tlsSwitch.processedResult
 
-            tlsSwitch.egressA.map(SendBytes) ~> placebo1.in1
-            tlsSwitch.egressB.map(SendBytes) ~> placebo2.in1
+            tlsSwitch.plainTextWrapperOut.map(SendBytes) ~> placebo1.in1
+            tlsSwitch.secureWrapperOut.map(SendBytes) ~> placebo2.in1
 
             placebo1.out1 ~> mergeOut
             placebo2.out1 ~> mergeOut
@@ -112,7 +111,7 @@ class SwitchingBidiFlowSpec
       val testData = List(1, 2, 3, 4, 1005, -6, -7, -8, -9, -10)
 
       val ints: Source[ByteString, NotUsed] = Source
-        .fromIterator(() => testData.toIterator)
+        .fromIterator(() => testData.iterator)
         .map[ByteString](b => {
 
           val bb = ByteBuffer.allocate(4)
@@ -145,9 +144,9 @@ class SwitchingBidiFlowSpec
 
             networkIn.out ~> tlsSwitch.dataIn
 
-            tlsSwitch.ingressA ~> placebo1.in2
+            tlsSwitch.plaintextWrapperIn ~> placebo1.in2
 
-            tlsSwitch.ingressB ~> placebo2.in2
+            tlsSwitch.secureWrapperIn ~> placebo2.in2
 
             placebo1.out2.map(_.bytes) ~> mergeDecrypted
             placebo2.out2.map(_.bytes) ~> mergeDecrypted
@@ -159,7 +158,7 @@ class SwitchingBidiFlowSpec
               val bbi = bb.getInt
               Logger().debug(s"Extracted int value of $bbi")
               val switchMessage = if (bbi == 1005) {
-                Option(SwitchTargetB())
+                Option(SecureTunnelEnabled)
               } else {
                 None
               }
@@ -167,8 +166,8 @@ class SwitchingBidiFlowSpec
 
             }) ~> tlsSwitch.processedResult
 
-            tlsSwitch.egressA.map(SendBytes) ~> placebo1.in1
-            tlsSwitch.egressB.map(SendBytes) ~> placebo2.in1
+            tlsSwitch.plainTextWrapperOut.map(SendBytes) ~> placebo1.in1
+            tlsSwitch.secureWrapperOut.map(SendBytes) ~> placebo2.in1
 
             placebo1.out1 ~> mergeOut
             placebo2.out1 ~> mergeOut

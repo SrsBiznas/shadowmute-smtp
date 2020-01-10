@@ -11,7 +11,7 @@ import akka.util.{ByteString, Timeout}
 import com.shadowmute.ingest.configuration.Configuration
 import com.shadowmute.ingest.metrics.MetricCollector
 import com.shadowmute.ingest.{
-  SwitchTargetB,
+  SecureTunnelEnabled,
   SwitchingBidiFlow,
   TLSSessionGenerator
 }
@@ -119,8 +119,8 @@ class SmtpHandler(
 
           networkIn ~> tlsSwitch.dataIn
 
-          tlsSwitch.ingressA ~> placebo.in2
-          tlsSwitch.ingressB ~> encryptedChannel.in2
+          tlsSwitch.plaintextWrapperIn ~> placebo.in2
+          tlsSwitch.secureWrapperIn ~> encryptedChannel.in2
 
           placebo.out2.collect {
             case sb: TLSProtocol.SessionBytes => sb.bytes
@@ -137,7 +137,7 @@ class SmtpHandler(
 
             val switchMode = if (smtpResponse.isInstanceOf[TLSReady]) {
               MetricCollector.StartTLSInitiated.inc()
-              Option(SwitchTargetB())
+              Option(SecureTunnelEnabled)
             } else {
               None
             }
@@ -145,8 +145,8 @@ class SmtpHandler(
             (ByteString(outboundData), switchMode)
           }) ~> tlsSwitch.processedResult
 
-          tlsSwitch.egressA.map(SendBytes) ~> placebo.in1
-          tlsSwitch.egressB.map(SendBytes) ~> encryptedChannel.in1
+          tlsSwitch.plainTextWrapperOut.map(SendBytes) ~> placebo.in1
+          tlsSwitch.secureWrapperOut.map(SendBytes) ~> encryptedChannel.in1
 
           placebo.out1 ~> mergeOut
           encryptedChannel.out1 ~> mergeOut

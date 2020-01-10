@@ -72,7 +72,7 @@ class SwitchingBidiFlow()
 
             // This does not support switching back
             switchMode.foreach(mode => {
-              if (mode == SwitchTargetB()) {
+              if (mode == SecureTunnelEnabled) {
                 tlsEnabled = true
 
                 getHandler(toConcreteInboundTLS).onPull()

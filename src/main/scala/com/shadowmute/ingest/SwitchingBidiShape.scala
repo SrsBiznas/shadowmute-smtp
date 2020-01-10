@@ -6,31 +6,31 @@ import scala.collection.immutable
 
 trait SwitchTarget
 
-case class SwitchTargetA() extends SwitchTarget
+case object InsecureTunnelEnabled extends SwitchTarget
 
-case class SwitchTargetB() extends SwitchTarget
+case object SecureTunnelEnabled extends SwitchTarget
 
 case class SwitchingBidiShape[Ingress, Egress](
     dataIn: Inlet[Ingress],
-    ingressA: Outlet[Ingress],
-    ingressB: Outlet[Ingress],
+    plaintextWrapperIn: Outlet[Ingress],
+    secureWrapperIn: Outlet[Ingress],
     processedResult: Inlet[(Egress, Option[SwitchTarget])],
-    egressA: Outlet[Egress],
-    egressB: Outlet[Egress]
+    plainTextWrapperOut: Outlet[Egress],
+    secureWrapperOut: Outlet[Egress]
 ) extends Shape {
   override def inlets: immutable.Seq[Inlet[_]] =
     dataIn :: processedResult :: Nil
 
   override def outlets: immutable.Seq[Outlet[_]] =
-    ingressA :: ingressB :: egressA :: egressB :: Nil
+    plaintextWrapperIn :: secureWrapperIn :: plainTextWrapperOut :: secureWrapperOut :: Nil
 
   override def deepCopy(): Shape =
     SwitchingBidiShape(
       dataIn.carbonCopy(),
-      ingressA.carbonCopy(),
-      ingressB.carbonCopy(),
+      plaintextWrapperIn.carbonCopy(),
+      secureWrapperIn.carbonCopy(),
       processedResult.carbonCopy(),
-      egressA.carbonCopy(),
-      egressB.carbonCopy()
+      plainTextWrapperOut.carbonCopy(),
+      secureWrapperOut.carbonCopy()
     )
 }
