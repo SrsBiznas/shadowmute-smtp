@@ -1,0 +1,44 @@
+# This image is simply openjdk/latest with flyway installed in /opt/flyway
+image: srsbiznas/sbt_yarn_ci:latest
+
+build:smtp:
+  stage: build
+  services:
+    - name: postgres:latest
+  variables:
+    INGEST_JDBC_URL: jdbc:postgresql://postgres:5432/shadowmute_ci
+    POSTGRES_PASSWORD: shadowmute_pass
+    POSTGRES_USER: shadowmute_user
+    POSTGRES_DB: shadowmute_ci
+  script:
+    # Schema is maintained by the web UI, this is simply a mirror
+    - /opt/flyway/flyway  -locations=filesystem:./conf/db/migration/default/common -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB} migrate -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD}
+
+    # Actually compile & test together, too slow otherwise
+    - sbt clean compile coverage test coverageReport
+    # Docker stage needs to be its own for memory consumption
+    - sbt clean compile docker:stage
+  artifacts:
+    name: ${CI_COMMIT_SHA}_ingest_build
+    expire_in: 1 week
+    paths:
+      - target/
+
+deploy:ingest:
+  image: docker:stable
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+  stage: deploy
+  only:
+    - /^release\/.*$/
+  except:
+    - branches
+  script:
+    - ls -l target/docker/stage
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t registry.gitlab.com/srsbiznasco/shadowmute/smtp:${CI_COMMIT_TAG#*\/} target/docker/stage
+    # Push will be tempermental because of logins
+    - docker push registry.gitlab.com/srsbiznasco/shadowmute/smtp:${CI_COMMIT_TAG#*\/}

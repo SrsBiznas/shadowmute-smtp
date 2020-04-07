@@ -6,7 +6,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ../administration/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus-dev.yml:/etc/prometheus/prometheus.yml
       - ./prometheus_data:/prometheus
 
   grafana:
@@ -21,6 +21,24 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=secret
       - GF_PATHS_PROVISIONING=/etc/shadowmute/provisioning
 
+  migration:
+    image: "boxfuse/flyway:latest"
+    command: "-connectRetries=10 -locations=filesystem:/migration/default/common migrate -url=jdbc:postgresql://shadowmute-pg-dev:5432/shadowmute_dev -user=shadowmute_user -password=shadowmute_pass"
+    volumes:
+      - ./conf/db/migration:/migration
+    links:
+      - shadowmute-pg-dev
+    depends_on:
+      - shadowmute-pg-dev
+
+  shadowmute-pg-dev:
+    image: "postgres:latest"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=shadowmute_pass
+      - POSTGRES_USER=shadowmute_user
+      - POSTGRES_DB=shadowmute_dev
 networks:
   development:
     driver: bridge
