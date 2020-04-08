@@ -1,1 +1,5 @@
 .idea
+/project/project/target/config-classes/
+/project/target/
+/prometheus_data/
+/target/
