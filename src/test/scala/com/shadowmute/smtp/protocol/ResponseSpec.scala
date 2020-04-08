@@ -1,8 +1,9 @@
 package com.shadowmute.smtp.protocol
 
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ResponseSpec extends WordSpec with MustMatchers {
+class ResponseSpec extends AnyWordSpec with Matchers {
   "Responses" must {
     "Start with the correct response code in Ok" in {
       val actual = Ok("Testing")

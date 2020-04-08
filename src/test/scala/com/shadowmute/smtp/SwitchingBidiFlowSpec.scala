@@ -9,15 +9,16 @@ import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source, TLSPlacebo}
 import akka.stream.{ActorMaterializer, FlowShape}
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{MustMatchers, WordSpecLike}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SwitchingBidiFlowSpec
     extends TestKit(ActorSystem("SwitchingBidiFlowSpec"))
-    with WordSpecLike
-    with MustMatchers {
+    with AnyWordSpecLike
+    with Matchers {
 
   "Switching Bidi Flow" must {
 

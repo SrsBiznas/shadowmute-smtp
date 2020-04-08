@@ -14,15 +14,17 @@ import com.shadowmute.smtp.configuration.{
   TlsConfiguration
 }
 import com.shadowmute.smtp.{MailDrop, MailMessage}
-import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class MailboxRegistrySpec
     extends TestKit(ActorSystem("MailboxRegistrySpec"))
-    with WordSpecLike
-    with MustMatchers
+    with AnyWordSpecLike
+    with Matchers
     with BeforeAndAfterAll {
 
   override def afterAll: Unit = {

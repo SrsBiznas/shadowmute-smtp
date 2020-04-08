@@ -15,12 +15,13 @@ import com.shadowmute.smtp.configuration.{
   TlsConfiguration
 }
 import com.shadowmute.smtp.mailbox.AlwaysNoneActor
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
-class SmtpHandlerSpec extends WordSpec with MustMatchers {
+class SmtpHandlerSpec extends AnyWordSpec with Matchers {
   "SmtpHandler" must {
     "Terminate a flow on ClosingConnection with replay" in {
       // This tests the termination flow logic inside the

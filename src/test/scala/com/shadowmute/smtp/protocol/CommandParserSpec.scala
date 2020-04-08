@@ -1,8 +1,10 @@
 package com.shadowmute.smtp.protocol
 
-import org.scalatest._
+import org.scalatest.EitherValues
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CommandParserSpec extends WordSpec with MustMatchers with EitherValues {
+class CommandParserSpec extends AnyWordSpec with Matchers with EitherValues {
   "Command Parser" must {
     "parse a HELO command" in {
       val incoming = SmtpConnection.IncomingMessage("HELO sample.testing")

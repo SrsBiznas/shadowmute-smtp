@@ -2,31 +2,31 @@ name := "shadowmute-smtp"
 
 version := "0.15.0"
 
-scalaVersion := "2.13.0"
+scalaVersion := "2.13.1"
 
-lazy val akkaVersion = "2.5.25"
+lazy val akkaVersion = "2.6.4"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-  "com.typesafe" % "config" % "1.3.4",
+  "com.typesafe" % "config" % "1.4.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
-  "com.typesafe.play" %% "play-json" % "2.7.4",
+  "com.typesafe.play" %% "play-json" % "2.8.1",
   "javax.mail" % "javax.mail-api" % "1.6.2" exclude ("javax.activation", "activation"),
   "com.sun.mail" % "javax.mail" % "1.6.2",
   // Database layer
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
-  "org.postgresql" % "postgresql" % "42.2.8",
-  "com.github.tminglei" %% "slick-pg" % "0.18.0",
+  "org.postgresql" % "postgresql" % "42.2.12",
+  "com.github.tminglei" %% "slick-pg" % "0.19.0",
   // Prometheus
-  "io.prometheus" % "simpleclient" % "0.6.0",
-  "io.prometheus" % "simpleclient_httpserver" % "0.6.0",
-  "io.prometheus" % "simpleclient_hotspot" % "0.6.0",
+  "io.prometheus" % "simpleclient" % "0.8.1",
+  "io.prometheus" % "simpleclient_httpserver" % "0.8.1",
+  "io.prometheus" % "simpleclient_hotspot" % "0.8.1",
   // Tests
-  "org.scalatest" %% "scalatest" % "3.0.8" % "test"
+  "org.scalatest" %% "scalatest" % "3.1.1" % "test"
 )
 
 mainClass in (Compile, run) := Some(

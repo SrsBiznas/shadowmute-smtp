@@ -5,15 +5,17 @@ import java.util.UUID
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.shadowmute.smtp.database.ReadWriteDataLayer
-import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class UpstreamMailboxObserverSpec
     extends TestKit(ActorSystem("UpstreamMailboxObserverSpec"))
-    with WordSpecLike
-    with MustMatchers
+    with AnyWordSpecLike
+    with Matchers
     with BeforeAndAfterAll {
 
   override def afterAll: Unit = {

@@ -13,7 +13,8 @@ import akka.util.Timeout
 import com.shadowmute.smtp.Logger
 import com.shadowmute.smtp.configuration._
 import com.shadowmute.smtp.mailbox.UnwrappedEchoActor
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,8 +23,8 @@ import scala.io.Source
 class SmtpConnectionSpec
     extends TestKit(ActorSystem("SmtpConnectionSpec"))
     with ImplicitSender
-    with WordSpecLike
-    with MustMatchers {
+    with AnyWordSpecLike
+    with Matchers {
   "SMTP Connection" must {
 
     val blackholeRegistry = system.actorOf(Props[BlackholeActor])

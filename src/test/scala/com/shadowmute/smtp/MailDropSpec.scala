@@ -20,18 +20,18 @@ import com.shadowmute.smtp.mailbox.{
   RecipientQuery,
   UnwrappedEchoActor
 }
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.Source
-
 import scala.jdk.CollectionConverters._
 
 class MailDropSpec
     extends TestKit(ActorSystem("MailDropSpec"))
-    with WordSpecLike
-    with MustMatchers {
+    with AnyWordSpecLike
+    with Matchers {
 
   "Mail Drop" must {
 

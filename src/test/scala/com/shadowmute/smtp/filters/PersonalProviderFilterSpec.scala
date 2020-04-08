@@ -9,9 +9,10 @@ import com.shadowmute.smtp.configuration.{
   MailDropConfiguration,
   TlsConfiguration
 }
-import org.scalatest._
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PersonalProviderFilterSpec extends WordSpec with MustMatchers {
+class PersonalProviderFilterSpec extends AnyWordSpec with Matchers {
   "Personal Provider filter" must {
 
     class StaticConfig extends Configuration {

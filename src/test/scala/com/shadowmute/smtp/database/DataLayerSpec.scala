@@ -3,12 +3,13 @@ package com.shadowmute.smtp.database
 import java.util.UUID
 
 import com.shadowmute.smtp.mailbox.Recipient
-import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class DataLayerSpec extends WordSpec with MustMatchers {
+class DataLayerSpec extends AnyWordSpec with Matchers {
 
   "Data layer" must {
     "Read a simple recipient from the database" in {
