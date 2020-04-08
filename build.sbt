@@ -1,4 +1,4 @@
-name := "shadowmute-ingest"
+name := "shadowmute-smtp"
 
 version := "0.15.0"
 
@@ -35,7 +35,7 @@ mainClass in (Compile, run) := Some(
 unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
 javaOptions in Universal ++= Seq(
-  "-Dconfig.file=/etc/shadowmute/ingest.conf",
+  "-Dconfig.file=/etc/shadowmute/smtp.conf",
   "-Dlogger.file=/etc/shadowmute/logger.xml",
   "-Dpidfile.path=/dev/null"
 )
@@ -69,4 +69,4 @@ dockerUpdateLatest := true
 
 dockerExposedPorts ++= Seq(2025)
 
-dockerEntrypoint := Seq("bin/shadowmute-ingest")
+dockerEntrypoint := Seq("bin/shadowmute-smtp")

@@ -39,6 +39,25 @@ services:
       - POSTGRES_PASSWORD=shadowmute_pass
       - POSTGRES_USER=shadowmute_user
       - POSTGRES_DB=shadowmute_dev
+
+  shadowmute-pg-test:
+    image: "postgres:latest"
+    ports:
+      - "15432:5432"
+    environment:
+      - POSTGRES_PASSWORD=shadowmute_pass
+      - POSTGRES_USER=shadowmute_user
+      - POSTGRES_DB=shadowmute_test
+
+  migration-test:
+    image: "boxfuse/flyway:latest"
+    command: "-connectRetries=10 -locations=filesystem:/migration/default/common migrate -url=jdbc:postgresql://shadowmute-pg-test:5432/shadowmute_test -user=shadowmute_user -password=shadowmute_pass"
+    volumes:
+      - ./conf/db/migration:/migration
+    links:
+      - shadowmute-pg-test
+    depends_on:
+      - shadowmute-pg-test
 networks:
   development:
     driver: bridge
