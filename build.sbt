@@ -32,7 +32,7 @@ libraryDependencies ++= Seq(
 )
 
 mainClass in (Compile, run) := Some(
-  "com.shadowmute.ingest.ShadowmuteApplication")
+  "com.shadowmute.smtp.ShadowmuteApplication")
 
 unmanagedResourceDirectories in Compile += baseDirectory.value / "conf"
 
