@@ -3,3 +3,5 @@
 /project/target/
 /prometheus_data/
 /target/
+local_dev.p12
+*.pem
