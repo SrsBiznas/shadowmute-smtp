@@ -5,30 +5,30 @@ version := "0.15.0"
 scalaVersion := "2.13.3"
 
 lazy val prometheusVersion = "0.9.0"
-lazy val slickVersion = "3.3.2"
-lazy val akkaVersion = "2.6.8"
+lazy val slickVersion = "3.3.3"
+lazy val akkaVersion = "2.6.10"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-  "com.typesafe" % "config" % "1.4.0",
+  "com.typesafe" % "config" % "1.4.1",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
-  "com.typesafe.play" %% "play-json" % "2.9.0",
+  "com.typesafe.play" %% "play-json" % "2.9.1",
   "javax.mail" % "javax.mail-api" % "1.6.2" exclude ("javax.activation", "activation"),
   "com.sun.mail" % "javax.mail" % "1.6.2",
   // Database layer
   "com.typesafe.slick" %% "slick" % slickVersion,
   "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
-  "org.postgresql" % "postgresql" % "42.2.14",
-  "com.github.tminglei" %% "slick-pg" % "0.19.1",
+  "org.postgresql" % "postgresql" % "42.2.18",
+  "com.github.tminglei" %% "slick-pg" % "0.19.3",
   // Prometheus
   "io.prometheus" % "simpleclient" % prometheusVersion,
   "io.prometheus" % "simpleclient_httpserver" % prometheusVersion,
   "io.prometheus" % "simpleclient_hotspot" % prometheusVersion,
   // Tests
-  "org.scalatest" %% "scalatest" % "3.2.0" % "test"
+  "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 )
 
 mainClass in (Compile, run) := Some(
