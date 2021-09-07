@@ -34,7 +34,9 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
 
     segments match {
       case mailbox :: domain :: Nil =>
-        if (configuration.validRecipientDomains.contains(domain.toLowerCase())) {
+        if (
+          configuration.validRecipientDomains.contains(domain.toLowerCase())
+        ) {
           Option(mailbox)
         } else None
       case _ => None
@@ -61,11 +63,10 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         val result = mailboxRegistry ? RecipientQuery(mailboxAsUUID)
 
         result.asInstanceOf[Future[Option[UUID]]].map(_.map(_.toString))
-      case shortUuidMatch() => {
+      case shortUuidMatch() =>
         val msb = java.lang.Long.parseLong(sanitizedMailbox, 16) << 32
         val result = mailboxRegistry ? RecipientQuery(new UUID(msb, 0L))
         result.asInstanceOf[Future[Option[UUID]]].map(_.map(_.toString))
-      }
       case _ =>
         Future.successful(None)
     }
@@ -103,16 +104,15 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
         .fold(
           // This *must* be folded to push the option into the Future
           Future.successful(None: Option[String])
-        )(
-          address =>
-            if (specialMailboxes.contains(address)) {
-              MetricCollector.SpecialMailboxRouted.inc()
-              Future.successful(
-                Option(configuration.mailDrop.specialMailboxDirectory)
-              )
-            } else {
-              convertMailboxToUserKeyPath(address)
-            }
+        )(address =>
+          if (specialMailboxes.contains(address)) {
+            MetricCollector.SpecialMailboxRouted.inc()
+            Future.successful(
+              Option(configuration.mailDrop.specialMailboxDirectory)
+            )
+          } else {
+            convertMailboxToUserKeyPath(address)
+          }
         )
         .map(
           _.fold({
@@ -121,7 +121,7 @@ class MailDrop(configuration: Configuration, mailboxRegistry: ActorRef) {
             configuration.mailDrop.discardDirectory
           })(userKey => {
             MetricCollector.MessageRecipientRouted.inc()
-            userKey.toString
+            userKey
           })
         )
 

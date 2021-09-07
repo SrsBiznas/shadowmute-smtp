@@ -35,7 +35,11 @@ class DataLayer {
     def mailbox = column[UUID]("mailbox")
 
     def * =
-      (ownerId, mailbox, id) <> (RecipientRecord.tupled, RecipientRecord.unapply)
+      (
+        ownerId,
+        mailbox,
+        id
+      ) <> (RecipientRecord.tupled, RecipientRecord.unapply)
   }
 
   def getAllRecipients(partition: Long = 0): Future[RecipientSet] = {
@@ -43,15 +47,17 @@ class DataLayer {
 
     try {
       val query = for {
-        (r, u) <- TableQuery[Recipients].filter(_.id.getOrElse(0L) > partition) join TableQuery[
+        (r, u) <- TableQuery[Recipients].filter(
+          _.id.getOrElse(0L) > partition
+        ) join TableQuery[
           Users
         ] on (_.ownerId === _.id)
       } yield (r.mailbox, u.key, r.id)
 
       db.run(query.result)
         .map(records => {
-          val rcpts = records.map {
-            case (mb: UUID, uk: UUID, _) => Recipient(mb, uk)
+          val rcpts = records.map { case (mb: UUID, uk: UUID, _) =>
+            Recipient(mb, uk)
           }
 
           // Travel through the records collecting the max while the arbitrary baggage
@@ -62,21 +68,24 @@ class DataLayer {
               records
                 .reduce[(UUID, UUID, Option[Long])] {
                   case ((x, y, a), (_, _, b)) =>
-                    (x, y, List(a, b).flatten match {
-                      case Nil => None
-                      case xs  => Option(xs.max)
-                    })
+                    (
+                      x,
+                      y,
+                      List(a, b).flatten match {
+                        case Nil => None
+                        case xs  => Option(xs.max)
+                      }
+                    )
                 }
                 ._3
             }
 
           RecipientSet(rcpts, maxIndex.getOrElse(0L))
         })
-        .recover {
-          case exception: Exception =>
-            Logger()
-              .error("[!] Error connecting to accounts database:", exception)
-            RecipientSet(Nil, -1)
+        .recover { case exception: Exception =>
+          Logger()
+            .error("[!] Error connecting to accounts database:", exception)
+          RecipientSet(Nil, -1)
         }
     } catch {
       case ex: Exception =>

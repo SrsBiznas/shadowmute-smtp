@@ -112,8 +112,8 @@ class SmtpConnection(
 
   when(Connected) {
     case Event(
-        incoming: SmtpConnection.IncomingMessage,
-        connection: Connection
+          incoming: SmtpConnection.IncomingMessage,
+          connection: Connection
         ) =>
       // Logger().debug(s"[*] Incoming ${incoming}")
       CommandParser
@@ -122,7 +122,8 @@ class SmtpConnection(
           rejection => {
             sender() ! rejection
             stay()
-          }, {
+          },
+          {
             case helo: Helo =>
               Logger().debug(s"[*] HELO from ${helo.domain}")
               sender() ! Ok("shadowmute.com")
@@ -147,8 +148,8 @@ class SmtpConnection(
 
   when(Greeted) {
     case Event(
-        incoming: SmtpConnection.IncomingMessage,
-        session: InitialSession
+          incoming: SmtpConnection.IncomingMessage,
+          session: InitialSession
         ) =>
       CommandParser
         .parse(incoming)
@@ -156,7 +157,8 @@ class SmtpConnection(
           rejection => {
             sender() ! rejection
             stay()
-          }, {
+          },
+          {
             case _: Helo =>
               sender() ! Ok("shadowmute.com")
               stay()
@@ -199,8 +201,8 @@ class SmtpConnection(
 
   when(IncomingMessage) {
     case Event(
-        incoming: SmtpConnection.IncomingMessage,
-        session: MailSession
+          incoming: SmtpConnection.IncomingMessage,
+          session: MailSession
         ) =>
       CommandParser
         .parse(incoming)
@@ -208,7 +210,8 @@ class SmtpConnection(
           rejection => {
             sender() ! rejection
             stay()
-          }, {
+          },
+          {
             case rcptVerb: Rcpt =>
               if (session.recipients.length < 100) {
                 sender() ! Ok("Ok")
@@ -272,8 +275,8 @@ class SmtpConnection(
 
   when(DataChannel) {
     case Event(
-        incoming: SmtpConnection.IncomingMessage,
-        session: DataChannel
+          incoming: SmtpConnection.IncomingMessage,
+          session: DataChannel
         ) =>
       val dataLine = incoming.message
 
