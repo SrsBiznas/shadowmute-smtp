@@ -24,17 +24,15 @@ class UpstreamMailboxObserver(registry: ActorRef) extends Actor {
     dataLayer
       .getAllRecipients(partition = lastIdentifiedMailbox)
       .filter(_.recipients.nonEmpty)(localEc)
-      .foreach(
-        recipients => {
+      .foreach(recipients => {
 
-          // Note: this happens in a future, so there's (an unlikely) threading issue here
-          lastIdentifiedMailbox = lastIdentifiedMailbox.max(recipients.maxIndex)
-          registry ! NewMailboxEvent(recipients)
-        }
-      )(localEc)
+        // Note: this happens in a future, so there's (an unlikely) threading issue here
+        lastIdentifiedMailbox = lastIdentifiedMailbox.max(recipients.maxIndex)
+        registry ! NewMailboxEvent(recipients)
+      })(localEc)
   }
 
-  override def receive: Receive = {
-    case Symbol("refresh") => refreshMailboxes()
+  override def receive: Receive = { case Symbol("refresh") =>
+    refreshMailboxes()
   }
 }

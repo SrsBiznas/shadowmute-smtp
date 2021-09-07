@@ -64,8 +64,8 @@ class SmtpHandler(
 
       // Trigger the banner
       .merge(welcomeMessage)
-      .mapAsync[Response](1)(
-        m => (connectionProcessor ? m).asInstanceOf[Future[Response]]
+      .mapAsync[Response](1)(m =>
+        (connectionProcessor ? m).asInstanceOf[Future[Response]]
       )
 
       // Catch the connection close requests
@@ -122,11 +122,11 @@ class SmtpHandler(
           tlsSwitch.plaintextWrapperIn ~> placebo.in2
           tlsSwitch.secureWrapperIn ~> encryptedChannel.in2
 
-          placebo.out2.collect {
-            case sb: TLSProtocol.SessionBytes => sb.bytes
+          placebo.out2.collect { case sb: TLSProtocol.SessionBytes =>
+            sb.bytes
           } ~> mergeDecrypted
-          encryptedChannel.out2.collect {
-            case sb: TLSProtocol.SessionBytes => sb.bytes
+          encryptedChannel.out2.collect { case sb: TLSProtocol.SessionBytes =>
+            sb.bytes
           } ~> mergeDecrypted
 
           mergeDecrypted ~> smtp

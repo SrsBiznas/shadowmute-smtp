@@ -33,11 +33,10 @@ class MailboxRegistry(mailDropConfiguration: MailDropConfiguration)
 
     val latestMessages = Files
       .list(searchPath)
-      .filter(
-        p =>
-          Instant
-            .ofEpochMilli(p.toFile.lastModified())
-            .isAfter(fiveMinsAgo)
+      .filter(p =>
+        Instant
+          .ofEpochMilli(p.toFile.lastModified())
+          .isAfter(fiveMinsAgo)
       )
 
     val messages = latestMessages.map[MessageWithPath](path => {
@@ -57,10 +56,9 @@ class MailboxRegistry(mailDropConfiguration: MailDropConfiguration)
 
     messages
       .filter(_.message.recipient.startsWith(s"${recipient.mailbox}@"))
-      .forEach {
-        case MessageWithPath(_, path) =>
-          val dest = correctTarget.resolve(path.getFileName)
-          Files.move(path, dest)
+      .forEach { case MessageWithPath(_, path) =>
+        val dest = correctTarget.resolve(path.getFileName)
+        Files.move(path, dest)
       }
 
   }

@@ -13,15 +13,17 @@ object CommandParser {
 
     val reversePathArg = parts(0).trim
 
-    if (reversePathArg.nonEmpty && reversePathArg
-          .take(5)
-          .toLowerCase == "from:") {
+    if (
+      reversePathArg.nonEmpty && reversePathArg
+        .take(5)
+        .toLowerCase == "from:"
+    ) {
       val reversePath = reversePathArg.drop(5)
 
       if (reversePath.take(1) == "<" && reversePath.takeRight(1) == ">") {
         val reversePathInternal = reversePath.drop(1).dropRight(1)
 
-        if (reversePathInternal.length == 0) {
+        if (reversePathInternal.isEmpty) {
           Right(Mail(None, parts.lift(1)))
         } else if (validateEmailAddress(reversePathInternal)) {
           Right(Mail(Some(reversePathInternal), parts.lift(1)))
@@ -42,15 +44,17 @@ object CommandParser {
 
     val recipientPathArg = parts(0).trim
 
-    if (recipientPathArg.nonEmpty && recipientPathArg
-          .take(3)
-          .toLowerCase == "to:") {
+    if (
+      recipientPathArg.nonEmpty && recipientPathArg
+        .take(3)
+        .toLowerCase == "to:"
+    ) {
       val recipientPath = recipientPathArg.drop(3)
 
       if (recipientPath.take(1) == "<" && recipientPath.takeRight(1) == ">") {
         val recipientPathInternal = recipientPath.drop(1).dropRight(1)
 
-        if (recipientPathInternal.length == 0) {
+        if (recipientPathInternal.isEmpty) {
           Left(MailboxNotAllowed())
         } else if (validateEmailAddress(recipientPathInternal)) {
           Right(Rcpt(recipientPathInternal, parts.lift(1)))
