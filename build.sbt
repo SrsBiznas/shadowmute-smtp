@@ -16,8 +16,7 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.5",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "com.typesafe.play" %% "play-json" % "2.9.2",
-//  "javax.mail" % "javax.mail-api" % "2.0.1" exclude ("javax.activation", "activation"),
-  "jakarta.mail" % "jakarta.mail-api" % "2.0.1",
+  "jakarta.mail" % "jakarta.mail-api" % "2.0.1" exclude ("javax.activation", "activation"),
   "com.sun.mail" % "jakarta.mail" % "2.0.1",
   // Database layer
   "com.typesafe.slick" %% "slick" % slickVersion,
