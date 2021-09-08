@@ -28,7 +28,6 @@ class SmtpHandlerSpec extends AnyWordSpec with Matchers {
       // SmtpHandler, but hasn't been isolated so this test
       // is effectively dead code
       implicit val system: ActorSystem = ActorSystem("reactive-tweets")
-      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val expectedCloser = ClosingConnection("Bye")
       val terminationFlow = Flow[Response]
@@ -74,7 +73,6 @@ class SmtpHandlerSpec extends AnyWordSpec with Matchers {
         })
 
       implicit val system: ActorSystem = ActorSystem("flow-builder")
-      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       val emptyConfig = new Configuration {
         override def mailDrop: MailDropConfiguration = ???
@@ -88,7 +86,7 @@ class SmtpHandlerSpec extends AnyWordSpec with Matchers {
         override def filters: FilterConfiguration = ???
       }
 
-      val emptyActor = system.actorOf(Props[AlwaysNoneActor])
+      val emptyActor = system.actorOf(Props[AlwaysNoneActor]())
 
       val emptyTLSGenerator = new TLSSessionGenerator {
         override def newSession(implicit actorSystem: ActorSystem): BidiFlow[

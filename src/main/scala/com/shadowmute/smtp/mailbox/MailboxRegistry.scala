@@ -79,6 +79,6 @@ class MailboxRegistry(mailDropConfiguration: MailDropConfiguration)
     case NewMailboxEvent(recipients) =>
       recipients.foreach(updateRegistry)
     case RecipientQuery(mailbox) =>
-      sender ! Option(registry.get(mailbox))
+      sender() ! Option(registry.get(mailbox))
   }
 }

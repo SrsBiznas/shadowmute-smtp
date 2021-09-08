@@ -33,10 +33,12 @@ object ShadowmuteApplication extends App {
     system.actorOf(Props(classOf[UpstreamMailboxObserver], mailboxRegistry))
 
   system.scheduler
-    .schedule(0.millis, configuration.mailboxObservationInterval.seconds) {
-      mailboxObserver ! Symbol("refresh")
-    }(system.dispatcher)
-
+    .scheduleAtFixedRate(
+      0.millis,
+      configuration.mailboxObservationInterval.seconds,
+      mailboxObserver,
+      Symbol("refresh")
+    )(system.dispatcher)
   DefaultExports.initialize()
 
   val server = new HTTPServer(9025)

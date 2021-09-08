@@ -5,7 +5,6 @@ import java.net.InetSocketAddress
 import java.nio.file.{Files, Path}
 import java.time.Instant
 import java.util.{Comparator, UUID}
-
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestActors.BlackholeActor
 import akka.testkit.TestKit
@@ -27,6 +26,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.jdk.CollectionConverters._
+import scala.util.Using
 
 class MailDropSpec
     extends TestKit(ActorSystem("MailDropSpec"))
@@ -34,6 +34,12 @@ class MailDropSpec
     with Matchers {
 
   "Mail Drop" must {
+
+    val ReversePathComparator = new Comparator[Path] {
+      override def compare(o1: Path, o2: Path): Int = {
+        o1.compareTo(o2)
+      }
+    }.reversed()
 
     "write a message to the user folder" in {
 
@@ -105,8 +111,10 @@ class MailDropSpec
       recipientContents.length mustBe 1
 
       val droppedFile = recipientTarget.resolve(recipientContents.head)
-      val src =
-        Source.fromFile(droppedFile.toString).getLines.mkString("")
+
+      val src = Using(Source.fromFile(droppedFile.toString)) { sourceFile =>
+        sourceFile.getLines().mkString("")
+      }.get
 
       src.contains(uuid.toString) mustBe true
 
@@ -159,7 +167,7 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]()))
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -222,7 +230,7 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]()))
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -238,8 +246,8 @@ class MailDropSpec
     def hardDelete(directory: Path): Unit = {
       Files
         .walk(directory)
-        .sorted(Comparator.reverseOrder())
-        .forEach(Files.delete(_))
+        .sorted(ReversePathComparator)
+        .forEach(Files.delete _)
     }
 
     "pull recipient mailbox from a valid recipient" in {
@@ -270,7 +278,7 @@ class MailDropSpec
 
       val staticConfig = new StaticConfig()
       val mailDrop =
-        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]()))
 
       val testRecipient = "test.recipient.179@shadowmute.com"
       val extracted = mailDrop.extractRecipientMailbox(testRecipient)
@@ -318,7 +326,7 @@ class MailDropSpec
 
       val staticConfig = new StaticConfig()
       val mailDrop =
-        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[BlackholeActor]()))
 
       val testRecipient = "test.recipient.259@mutedshadows.com"
       val extracted = mailDrop.extractRecipientMailbox(testRecipient)
@@ -368,7 +376,7 @@ class MailDropSpec
 
       result mustBe defined
 
-      result.get.toString mustBe nonCompliant.toLowerCase()
+      result.get mustBe nonCompliant.toLowerCase()
     }
 
     "convert a supplied recipient mailbox into a user key directory" in {
@@ -400,8 +408,8 @@ class MailDropSpec
       val targetUserKey = UUID.randomUUID()
 
       class SimulatedUserRegistry extends Actor {
-        override def receive: Receive = {
-          case _ => sender ! Option(targetUserKey)
+        override def receive: Receive = { case _ =>
+          sender() ! Option(targetUserKey)
         }
       }
 
@@ -472,7 +480,7 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]()))
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -486,7 +494,7 @@ class MailDropSpec
 
       val child = Files
         .walk(recipientTarget)
-        .sorted(Comparator.reverseOrder())
+        .sorted(ReversePathComparator)
         .findFirst()
 
       // These are java optionals, not Option[]
@@ -495,7 +503,9 @@ class MailDropSpec
       val dropped = child.get()
 
       val src =
-        Source.fromFile(dropped.toString).getLines.mkString("")
+        Using(Source.fromFile(dropped.toString)) { sourceFile =>
+          sourceFile.getLines().mkString("")
+        }.get
 
       src.contains(canaryUuid.toString) mustBe true
     }
@@ -546,7 +556,7 @@ class MailDropSpec
       val staticConfig = new StaticConfig()
 
       val dropper =
-        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]))
+        new MailDrop(staticConfig, system.actorOf(Props[AlwaysNoneActor]()))
 
       Await.ready(
         dropper.dropMessage(newMessage),
@@ -560,7 +570,7 @@ class MailDropSpec
 
       val child = Files
         .walk(recipientTarget)
-        .sorted(Comparator.reverseOrder())
+        .sorted(ReversePathComparator)
         .findFirst()
 
       // These are java optionals, not Option[]
@@ -569,7 +579,9 @@ class MailDropSpec
       val dropped = child.get()
 
       val src =
-        Source.fromFile(dropped.toString).getLines.mkString("")
+        Using(Source.fromFile(dropped.toString)) { sourceFile =>
+          sourceFile.getLines().mkString("")
+        }.get
 
       src.contains(canaryUuid.toString) mustBe true
     }
@@ -645,12 +657,14 @@ class MailDropSpec
       recipientContents.length mustBe 1
 
       val droppedFile = recipientTarget.resolve(recipientContents.head)
-      val src =
-        Source.fromFile(droppedFile.toString).getLines.mkString("")
-
+      val src = Using(Source.fromFile(droppedFile.toString)) { sourceFile =>
+        sourceFile.getLines().mkString("")
+      }.get
       src.contains(uuid.toString) mustBe true
 
-      src.contains("Expiry-Date: Tue, 9 Jul 2019 01:01:17 +0000 (UTC)") mustBe true
+      src.contains(
+        "Expiry-Date: Tue, 9 Jul 2019 01:01:17 +0000 (UTC)"
+      ) mustBe true
 
       droppedFile.toFile.deleteOnExit()
     }
@@ -726,7 +740,9 @@ class MailDropSpec
 
       val droppedFile = recipientTarget.resolve(recipientContents.head)
       val src =
-        Source.fromFile(droppedFile.toString).getLines.mkString("")
+        Using(Source.fromFile(droppedFile.toString)) { sourceFile =>
+          sourceFile.getLines().mkString("")
+        }.get
 
       src.contains(uuid.toString) mustBe true
 
@@ -762,8 +778,8 @@ class MailDropSpec
       }
 
       class SimulatedUserRegistry extends Actor {
-        override def receive: Receive = {
-          case RecipientQuery(incoming) => sender ! Option(incoming)
+        override def receive: Receive = { case RecipientQuery(incoming) =>
+          sender() ! Option(incoming)
         }
       }
 
@@ -777,13 +793,13 @@ class MailDropSpec
       val incomingMailbox = "abcd1234"
 
       val result = Await.result(
-        mailDrop.convertMailboxToUserKeyPath(incomingMailbox.toString),
+        mailDrop.convertMailboxToUserKeyPath(incomingMailbox),
         100.millis
       )
 
       result mustBe defined
 
-      result mustBe Some("abcd1234-0000-0000-0000-000000000000".toString)
+      result mustBe Some("abcd1234-0000-0000-0000-000000000000")
     }
   }
 }

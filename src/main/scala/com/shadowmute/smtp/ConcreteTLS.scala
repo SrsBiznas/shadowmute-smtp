@@ -1,18 +1,20 @@
 package com.shadowmute.smtp
 
-import java.io.FileInputStream
-import java.security.{KeyStore, SecureRandom}
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{BidiFlow, TLS}
-import akka.stream.{TLSClientAuth, TLSProtocol, TLSRole}
+import akka.stream.{EagerClose, TLSProtocol}
 import akka.util.ByteString
 import com.shadowmute.smtp.configuration.TlsConfiguration
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 
-import scala.collection.immutable.ArraySeq
+import java.io.FileInputStream
+import java.security.{KeyStore, SecureRandom}
+import javax.net.ssl.{
+  KeyManagerFactory,
+  SSLContext,
+  SSLEngine,
+  TrustManagerFactory
+}
 
 trait TLSSessionGenerator {
   def newSession(implicit actorSystem: ActorSystem): BidiFlow[
@@ -43,9 +45,6 @@ class ConcreteTLS(configuration: TlsConfiguration) extends TLSSessionGenerator {
     TLSProtocol.SslTlsInbound,
     NotUsed
   ] = {
-
-    val sslConfig = AkkaSSLConfig()
-
     val sslContext = SSLContext.getInstance("TLS")
     sslContext.init(
       keyManagerFactory.getKeyManagers,
@@ -53,25 +52,25 @@ class ConcreteTLS(configuration: TlsConfiguration) extends TLSSessionGenerator {
       new SecureRandom
     )
 
-    val defaultParams = sslContext.getDefaultSSLParameters
-    val defaultProtocols = defaultParams.getProtocols
-    val protocols =
-      sslConfig.configureProtocols(defaultProtocols, sslConfig.config)
-    defaultParams.setProtocols(protocols)
+    TLS(() => { createSSLEngine(sslContext) }, EagerClose)
+  }
 
-    // ciphers
-    val defaultCiphers = defaultParams.getCipherSuites
-    val cipherSuites =
-      sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config)
-    defaultParams.setCipherSuites(cipherSuites)
+  def createSSLEngine(sslContext: SSLContext): SSLEngine = {
+    val engine = sslContext.createSSLEngine()
 
-    val negotiateNewSession = TLSProtocol.NegotiateNewSession
-      .withCipherSuites(ArraySeq.unsafeWrapArray(cipherSuites): _*)
-      .withProtocols(ArraySeq.unsafeWrapArray(protocols): _*)
-      .withParameters(defaultParams)
-      .withClientAuth(TLSClientAuth.None)
+    engine.setUseClientMode(false)
+    engine.setEnabledCipherSuites(
+      Array(
+        "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+      )
+    )
 
-    TLS(sslContext, Option(sslConfig), negotiateNewSession, TLSRole.server)
+    engine.setEnabledProtocols(Array("TLSv1.3", "TLSv1.2"))
+
+    engine
   }
 
 }

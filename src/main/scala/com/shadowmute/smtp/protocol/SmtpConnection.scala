@@ -218,7 +218,7 @@ class SmtpConnection(
                 goto(IncomingMessage) using session
                   .withRecipient(rcptVerb.recipient)
               } else {
-                sender ! TooManyRecipients()
+                sender() ! TooManyRecipients()
                 stay()
               }
             case _: Mail =>
@@ -226,10 +226,10 @@ class SmtpConnection(
               stay()
             case _: OpenDataChannel =>
               if (session.recipients.isEmpty) {
-                sender ! CommandOutOfSequence()
+                sender() ! CommandOutOfSequence()
                 stay()
               } else {
-                sender ! StartMailInput()
+                sender() ! StartMailInput()
                 MetricCollector.MessageInitiated.inc()
                 goto(DataChannel) using session.openDataChannel()
               }
@@ -315,5 +315,5 @@ object SmtpConnection {
 
   case class IncomingMessage(message: String)
 
-  val props: Props = Props[SmtpConnection]
+  val props: Props = Props[SmtpConnection]()
 }
