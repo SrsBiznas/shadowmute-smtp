@@ -3,7 +3,6 @@ package com.shadowmute.smtp.protocol
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.util.UUID
-
 import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack}
 import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
@@ -19,6 +18,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.io.Source
+import scala.util.Using
 
 class SmtpConnectionSpec
     extends TestKit(ActorSystem("SmtpConnectionSpec"))
@@ -27,7 +27,7 @@ class SmtpConnectionSpec
     with Matchers {
   "SMTP Connection" must {
 
-    val blackholeRegistry = system.actorOf(Props[BlackholeActor])
+    val blackholeRegistry = system.actorOf(Props[BlackholeActor]())
 
     class ConnectedActor(configuration: Configuration)
         extends SmtpConnection(configuration, blackholeRegistry) {
@@ -476,8 +476,9 @@ class SmtpConnectionSpec
       recipientContents.length mustBe 1
 
       val droppedFile = recipientTarget.resolve(recipientContents.head)
-      val src =
-        Source.fromFile(droppedFile.toString).getLines.mkString("")
+      val src = Using(Source.fromFile(droppedFile.toString)) { sourceFile =>
+        sourceFile.getLines().mkString("")
+      }.get
 
       val randomFound = src.contains(random.toString)
       if (!randomFound) {
@@ -494,8 +495,8 @@ class SmtpConnectionSpec
     "Ensure a Start TLS resets an actor" in {
 
       // clear the receipt buffers
-      receiveWhile(100.millis, 100.millis, 10) {
-        case _ => ()
+      receiveWhile(100.millis, 100.millis, 10) { case _ =>
+        ()
       }
 
       val smtpConnection =

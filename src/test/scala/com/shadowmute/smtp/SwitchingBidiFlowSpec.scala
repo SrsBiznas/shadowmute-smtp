@@ -1,17 +1,16 @@
 package com.shadowmute.smtp
 
-import java.nio.ByteBuffer
-
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.FlowShape
 import akka.stream.TLSProtocol.SendBytes
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Sink, Source, TLSPlacebo}
-import akka.stream.{ActorMaterializer, FlowShape}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.ByteBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -23,8 +22,6 @@ class SwitchingBidiFlowSpec
   "Switching Bidi Flow" must {
 
     "Perform a simple echo cycle using two placebos" in {
-
-      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       akka.stream.TLSProtocol
 
@@ -102,8 +99,6 @@ class SwitchingBidiFlowSpec
     }
 
     "Perform a simple echo cycle using two placebos with a switch" in {
-
-      implicit val materializer: ActorMaterializer = ActorMaterializer()
 
       akka.stream.TLSProtocol
 

@@ -6,14 +6,13 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.{Date, UUID}
 import java.util.concurrent.Executors
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.shadowmute.smtp.configuration.Configuration
 import com.shadowmute.smtp.mailbox.RecipientQuery
 import com.shadowmute.smtp.metrics._
-import javax.mail.internet.MailDateFormat
+import jakarta.mail.internet.MailDateFormat
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
